@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Background -->
+  <rect width="32" height="32" rx="7" fill="#f97316"/>
+  <!-- Truck body (cargo box) -->
+  <rect x="3" y="10" width="16" height="10" rx="1.5" fill="white"/>
+  <!-- Cab -->
+  <path d="M19 14h4.5a1 1 0 0 1 .8.4l2.5 3.2a1 1 0 0 1 .2.6V20a.5.5 0 0 1-.5.5H19V14z" fill="white"/>
+  <!-- Wheels -->
+  <circle cx="8" cy="21.5" r="2" fill="#f97316" stroke="white" stroke-width="1.2"/>
+  <circle cx="21" cy="21.5" r="2" fill="#f97316" stroke="white" stroke-width="1.2"/>
+  <!-- Windshield hint -->
+  <path d="M19.5 14.8v3.5h4l-1.8-2.4a.4.4 0 0 0-.32-.16H19.5z" fill="#f97316" opacity="0.4"/>
+</svg>
