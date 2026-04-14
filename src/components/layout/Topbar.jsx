@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { formatDateTime } from '../../utils/formatters';
 
-const Topbar = ({ title }) => {
+const Topbar = ({ title, onMenuClick }) => {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef();
@@ -16,7 +16,15 @@ const Topbar = ({ title }) => {
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
-      <h1 className="text-lg font-semibold text-slate-800">{title}</h1>
+      <div className="flex items-center gap-4">
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          <Menu size={20} className="text-slate-600" />
+        </button>
+        <h1 className="text-lg font-semibold text-slate-800">{title}</h1>
+      </div>
 
       <div className="relative" ref={ref}>
         <button
