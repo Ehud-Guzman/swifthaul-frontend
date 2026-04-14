@@ -62,7 +62,7 @@ const AdminPricing = () => {
                     type="number" min="0" step="0.01"
                     value={edits[type]?.[key] || 0}
                     onChange={(e) => setEdits((ed) => ({ ...ed, [type]: { ...ed[type], [key]: e.target.value } }))}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                 </div>
               ))}

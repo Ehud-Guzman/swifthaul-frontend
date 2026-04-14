@@ -47,7 +47,9 @@ const AdminVehicles = () => {
     { key: 'added', label: 'Added', render: (r) => formatDate(r.created_at) },
     {
       key: 'actions', label: '', render: (r) => (
-        <Button size="sm" variant="outline" onClick={() => openStatusChange(r)}>Change Status</Button>
+        <Button size="sm" variant="outline" onClick={() => openStatusChange(r)} className="w-full sm:w-auto">
+          Change Status
+        </Button>
       ),
     },
   ];
@@ -57,7 +59,7 @@ const AdminVehicles = () => {
       <div className="flex gap-2 flex-wrap">
         {STATUS_FILTERS.map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
             {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
           </button>
         ))}
@@ -74,7 +76,7 @@ const AdminVehicles = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">New Status</label>
               <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
                 <option value="available">Available</option>
                 <option value="assigned">Assigned</option>
                 <option value="maintenance">Maintenance</option>

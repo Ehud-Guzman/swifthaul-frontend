@@ -63,7 +63,7 @@ const AdminAnalytics = () => {
         <div className="flex gap-2">
           {PERIODS.map((p) => (
             <button key={p.value} onClick={() => setPeriod(p.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${period === p.value ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${period === p.value ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
               {p.label}
             </button>
           ))}

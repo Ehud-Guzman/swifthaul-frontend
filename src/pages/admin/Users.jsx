@@ -57,7 +57,7 @@ const AdminUsers = () => {
     { key: 'joined', label: 'Joined', render: (r) => formatDate(r.created_at) },
     {
       key: 'actions', label: '', render: (r) => (
-        <Button size="sm" variant={r.is_active ? 'danger' : 'secondary'} onClick={() => toggleActive(r)}>
+        <Button size="sm" variant={r.is_active ? 'danger' : 'secondary'} onClick={() => toggleActive(r)} className="w-full sm:w-auto">
           {r.is_active ? 'Deactivate' : 'Activate'}
         </Button>
       ),
@@ -71,7 +71,7 @@ const AdminUsers = () => {
           {ROLES.map((r) => (
             <button key={r}
               onClick={() => setRoleFilter(r)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${roleFilter === r ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${roleFilter === r ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
               {r ? r.charAt(0).toUpperCase() + r.slice(1) : 'All'}
             </button>
           ))}
@@ -91,13 +91,13 @@ const AdminUsers = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
               <input type={type} required={key !== 'phone'} value={form[key]}
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
             </div>
           ))}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+              className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
               <option value="owner">Vehicle Owner</option>
               <option value="driver">Driver</option>
             </select>
@@ -107,7 +107,7 @@ const AdminUsers = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1">License Number</label>
               <input value={form.license_number} required
                 onChange={(e) => setForm({ ...form, license_number: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
             </div>
           )}
           <div className="flex gap-3 justify-end pt-2">

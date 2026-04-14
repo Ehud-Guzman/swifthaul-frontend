@@ -78,7 +78,7 @@ const AdminJobs = () => {
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions', label: '', render: (r) => (
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
           <Button size="sm" variant="secondary" onClick={() => { setSelected(r); setDetailModal(true); }}>View</Button>
           {r.status === 'pending' && <Button size="sm" onClick={() => openAssign(r)}>Assign</Button>}
           {!['delivered', 'cancelled'].includes(r.status) && (
@@ -91,12 +91,12 @@ const AdminJobs = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         {STATUS_FILTERS.map((s) => (
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === s ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
           >
             {s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'All'}
           </button>
@@ -118,7 +118,7 @@ const AdminJobs = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle</label>
               <select value={assignForm.vehicle_id} onChange={(e) => setAssignForm({ ...assignForm, vehicle_id: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
                 <option value="">Select vehicle</option>
                 {vehicles.map((v) => (
                   <option key={v._id} value={v._id}>{v.name} — {v.plate_number} ({v.type})</option>
@@ -128,7 +128,7 @@ const AdminJobs = () => {
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Driver</label>
               <select value={assignForm.driver_id} onChange={(e) => setAssignForm({ ...assignForm, driver_id: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
                 <option value="">Select driver</option>
                 {drivers.map((d) => (
                   <option key={d._id} value={d._id}>{d.name} — {d.email}</option>
@@ -139,7 +139,7 @@ const AdminJobs = () => {
               <label className="block text-sm font-medium text-slate-700 mb-1">Price Override (KSH)</label>
               <input type="number" value={assignForm.price_override}
                 onChange={(e) => setAssignForm({ ...assignForm, price_override: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
             </div>
             <div className="flex gap-3 justify-end">
               <Button variant="secondary" onClick={() => setAssignModal(false)}>Cancel</Button>
@@ -154,7 +154,7 @@ const AdminJobs = () => {
         {selected && (
           <div className="space-y-5">
             <StatusTimeline currentStatus={selected.status} />
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-slate-400 text-xs">Client</p>
                 {selected.is_guest ? (
@@ -175,7 +175,7 @@ const AdminJobs = () => {
               <div><p className="text-slate-400 text-xs">Drop-off</p><p className="font-medium">{selected.dropoff_location}</p></div>
               <div><p className="text-slate-400 text-xs">Cargo / Weight</p><p className="font-medium capitalize">{selected.cargo_type?.replace(/_/g, ' ')} — {selected.weight_kg} kg</p></div>
               <div><p className="text-slate-400 text-xs">Price</p><p className="font-medium">{formatKSH(selected.suggested_price)}</p></div>
-              {selected.notes && <div className="col-span-2"><p className="text-slate-400 text-xs">Notes</p><p>{selected.notes}</p></div>}
+              {selected.notes && <div className="col-span-1 sm:col-span-2"><p className="text-slate-400 text-xs">Notes</p><p>{selected.notes}</p></div>}
             </div>
             {selected.vehicle_id && (
               <div className="bg-slate-50 rounded-lg p-3 text-sm">
