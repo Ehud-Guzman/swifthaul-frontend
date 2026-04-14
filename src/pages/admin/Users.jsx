@@ -16,6 +16,11 @@ const AdminUsers = () => {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: 'owner', license_number: '' });
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [editModal, setEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
+  const [editTarget, setEditTarget] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -48,6 +53,28 @@ const AdminUsers = () => {
     }
   };
 
+  const openEdit = (user) => {
+    setEditTarget(user);
+    setEditForm({ name: user.name, email: user.email, phone: user.phone || '' });
+    setEditError('');
+    setEditModal(true);
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    setEditError('');
+    setSaving(true);
+    try {
+      await usersApi.update(editTarget._id, editForm);
+      setEditModal(false);
+      load();
+    } catch (err) {
+      setEditError(err.response?.data?.message || 'Update failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const columns = [
     { key: 'name', label: 'Name', render: (r) => <span className="font-medium">{r.name}</span> },
     { key: 'email', label: 'Email' },
@@ -57,9 +84,12 @@ const AdminUsers = () => {
     { key: 'joined', label: 'Joined', render: (r) => formatDate(r.created_at) },
     {
       key: 'actions', label: '', render: (r) => (
-        <Button size="sm" variant={r.is_active ? 'danger' : 'secondary'} onClick={() => toggleActive(r)} className="w-full sm:w-auto">
-          {r.is_active ? 'Deactivate' : 'Activate'}
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => openEdit(r)}>Edit</Button>
+          <Button size="sm" variant={r.is_active ? 'danger' : 'secondary'} onClick={() => toggleActive(r)}>
+            {r.is_active ? 'Deactivate' : 'Activate'}
+          </Button>
+        </div>
       ),
     },
   ];
@@ -83,6 +113,7 @@ const AdminUsers = () => {
         <Table columns={columns} data={users} />
       )}
 
+      {/* Create User Modal */}
       <Modal open={createModal} onClose={() => setCreateModal(false)} title="Create Account">
         <form onSubmit={handleCreate} className="space-y-4">
           {error && <div className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
@@ -113,6 +144,25 @@ const AdminUsers = () => {
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" type="button" onClick={() => setCreateModal(false)}>Cancel</Button>
             <Button type="submit" loading={creating}>Create Account</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal open={editModal} onClose={() => setEditModal(false)} title="Edit User">
+        <form onSubmit={handleEdit} className="space-y-4">
+          {editError && <div className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{editError}</div>}
+          {[['Full Name', 'name', 'text'], ['Email', 'email', 'email'], ['Phone', 'phone', 'tel']].map(([label, key, type]) => (
+            <div key={key}>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+              <input type={type} required={key !== 'phone'} value={editForm[key]}
+                onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            </div>
+          ))}
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" type="button" onClick={() => setEditModal(false)}>Cancel</Button>
+            <Button type="submit" loading={saving}>Save Changes</Button>
           </div>
         </form>
       </Modal>
