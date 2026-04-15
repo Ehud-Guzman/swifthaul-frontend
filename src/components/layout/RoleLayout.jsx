@@ -12,12 +12,14 @@ const pageTitles = {
   '/admin/analytics': 'Analytics',
   '/owner': 'Overview',
   '/owner/vehicles': 'My Vehicles',
+  '/owner/jobs': 'Jobs',
   '/owner/earnings': 'Earnings',
   '/client': 'Overview',
   '/client/request': 'Request a Job',
   '/client/jobs': 'My Jobs',
   '/driver': 'Overview',
   '/driver/jobs': 'My Jobs',
+  '/driver/earnings': 'Earnings',
 };
 
 const RoleLayout = () => {

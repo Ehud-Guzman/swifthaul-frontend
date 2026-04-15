@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Truck, Users, Package, DollarSign,
   BarChart2, LogOut, ClipboardList, Car, Wallet,
+  ArrowDownToLine, AlertTriangle, ShieldCheck,
 } from 'lucide-react';
 
 const navByRole = {
@@ -12,11 +13,15 @@ const navByRole = {
     { label: 'Users', to: '/admin/users', icon: Users },
     { label: 'Vehicles', to: '/admin/vehicles', icon: Truck },
     { label: 'Pricing', to: '/admin/pricing', icon: DollarSign },
+    { label: 'Payouts', to: '/admin/payouts', icon: ArrowDownToLine },
+    { label: 'Disputes', to: '/admin/disputes', icon: AlertTriangle },
     { label: 'Analytics', to: '/admin/analytics', icon: BarChart2 },
+    { label: 'Audit Log', to: '/admin/audit-log', icon: ShieldCheck },
   ],
   owner: [
     { label: 'Dashboard', to: '/owner', icon: LayoutDashboard },
     { label: 'My Vehicles', to: '/owner/vehicles', icon: Car },
+    { label: 'Jobs', to: '/owner/jobs', icon: ClipboardList },
     { label: 'Earnings', to: '/owner/earnings', icon: Wallet },
   ],
   client: [
@@ -27,6 +32,7 @@ const navByRole = {
   driver: [
     { label: 'Dashboard', to: '/driver', icon: LayoutDashboard },
     { label: 'My Jobs', to: '/driver/jobs', icon: ClipboardList },
+    { label: 'Earnings', to: '/driver/earnings', icon: Wallet },
   ],
 };
 

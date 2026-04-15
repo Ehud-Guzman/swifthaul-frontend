@@ -8,6 +8,8 @@ import Button from '../../components/ui/Button';
 import { formatKSH } from '../../utils/formatters';
 import { Download } from 'lucide-react';
 
+const JOB_STATUSES = ['', 'pending', 'assigned', 'picked_up', 'in_transit', 'delivered', 'cancelled'];
+
 const AdminAnalytics = () => {
   const [period, setPeriod] = useState('daily');
   const [jobs, setJobs] = useState([]);
@@ -16,6 +18,7 @@ const AdminAnalytics = () => {
   const [drivers, setDrivers] = useState([]);
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exportStatus, setExportStatus] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -34,8 +37,8 @@ const AdminAnalytics = () => {
     }).finally(() => setLoading(false));
   }, [period]);
 
-  const downloadCSV = async (fn, name) => {
-    const { data } = await fn();
+  const downloadCSV = async (fn, name, params) => {
+    const { data } = await fn(params);
     const url = URL.createObjectURL(new Blob([data], { type: 'text/csv' }));
     const a = document.createElement('a');
     a.href = url; a.download = name; a.click();
@@ -68,10 +71,21 @@ const AdminAnalytics = () => {
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => downloadCSV(analyticsApi.exportJobs, 'swifthaul_jobs.csv')}>
-            <Download size={13} /> Jobs CSV
-          </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1">
+            <select
+              value={exportStatus}
+              onChange={(e) => setExportStatus(e.target.value)}
+              className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            >
+              {JOB_STATUSES.map((s) => (
+                <option key={s} value={s}>{s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'All Statuses'}</option>
+              ))}
+            </select>
+            <Button size="sm" variant="outline" onClick={() => downloadCSV(analyticsApi.exportJobs, 'swifthaul_jobs.csv', exportStatus ? { status: exportStatus } : undefined)}>
+              <Download size={13} /> Jobs CSV
+            </Button>
+          </div>
           <Button size="sm" variant="outline" onClick={() => downloadCSV(analyticsApi.exportEarnings, 'swifthaul_earnings.csv')}>
             <Download size={13} /> Earnings CSV
           </Button>

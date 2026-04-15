@@ -20,16 +20,18 @@ const DriverJobs = () => {
   const [updating, setUpdating] = useState(false);
   const [noteModal, setNoteModal] = useState(false);
   const [note, setNote] = useState('');
+  const [updateError, setUpdateError] = useState('');
 
   const hasActiveJob = jobs.some((j) => ['picked_up', 'in_transit'].includes(j.status));
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await jobsApi.getAll();
+    const { data } = await jobsApi.getAll({ limit: 100 });
+    const list = data.jobs ?? data;
     // Sort: active first, then assigned by date, then delivered
     const order = { in_transit: 0, picked_up: 1, assigned: 2, delivered: 3 };
-    data.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
-    setJobs(data);
+    list.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+    setJobs(list);
     setLoading(false);
   }, []);
 
@@ -40,6 +42,7 @@ const DriverJobs = () => {
     const transition = STATUS_NEXT[selected.status];
     if (!transition) return;
     setUpdating(true);
+    setUpdateError('');
     try {
       await jobsApi.updateStatus(selected._id, { new_status: transition.next, note });
       setNoteModal(false);
@@ -47,7 +50,7 @@ const DriverJobs = () => {
       setSelected(null);
       load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Update failed');
+      setUpdateError(err.response?.data?.message || 'Update failed');
     } finally {
       setUpdating(false);
     }
@@ -131,6 +134,7 @@ const DriverJobs = () => {
       <Modal open={noteModal} onClose={() => setNoteModal(false)} title="Update Status" size="sm">
         {selected && (
           <div className="space-y-4">
+            {updateError && <div className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{updateError}</div>}
             <p className="text-sm text-slate-600">
               Updating to: <span className="font-semibold capitalize">{STATUS_NEXT[selected.status]?.next?.replace(/_/g, ' ')}</span>
             </p>

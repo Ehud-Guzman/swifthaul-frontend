@@ -1,25 +1,20 @@
-import { Check } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 const STEPS = ['pending', 'assigned', 'picked_up', 'in_transit', 'delivered'];
 
-const StatusTimeline = ({ currentStatus }) => {
-  const currentIndex = STEPS.indexOf(currentStatus);
+const StatusTimeline = ({ currentStatus, cancelledFromStatus }) => {
   const isCancelled = currentStatus === 'cancelled';
 
-  if (isCancelled) {
-    return (
-      <div className="flex items-center gap-2 text-red-600 text-sm font-medium">
-        <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" />
-        Job Cancelled
-      </div>
-    );
-  }
+  // For cancelled jobs, show progress up to the point of cancellation
+  const progressStatus = isCancelled ? (cancelledFromStatus || 'pending') : currentStatus;
+  const currentIndex = STEPS.indexOf(progressStatus);
 
   return (
     <div className="flex items-center gap-0">
       {STEPS.map((step, i) => {
         const done = i < currentIndex;
-        const active = i === currentIndex;
+        const active = i === currentIndex && !isCancelled;
+        const cancelledAt = isCancelled && i === currentIndex;
         const label = step.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
         return (
@@ -27,21 +22,37 @@ const StatusTimeline = ({ currentStatus }) => {
             <div className="flex flex-col items-center">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  done
+                  cancelledAt
+                    ? 'bg-red-500 text-white ring-4 ring-red-100'
+                    : done
                     ? 'bg-green-500 text-white'
                     : active
                     ? 'bg-orange-500 text-white ring-4 ring-orange-100'
                     : 'bg-slate-200 text-slate-400'
                 }`}
               >
-                {done ? <Check size={13} /> : i + 1}
+                {cancelledAt ? <X size={13} /> : done ? <Check size={13} /> : i + 1}
               </div>
-              <span className={`text-[10px] mt-1 whitespace-nowrap font-medium ${active ? 'text-orange-600' : done ? 'text-green-600' : 'text-slate-400'}`}>
-                {label}
+              <span
+                className={`text-[10px] mt-1 whitespace-nowrap font-medium ${
+                  cancelledAt
+                    ? 'text-red-600'
+                    : active
+                    ? 'text-orange-600'
+                    : done
+                    ? 'text-green-600'
+                    : 'text-slate-400'
+                }`}
+              >
+                {cancelledAt ? 'Cancelled' : label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`w-10 h-0.5 mx-1 mb-4 transition-colors ${i < currentIndex ? 'bg-green-400' : 'bg-slate-200'}`} />
+              <div
+                className={`w-10 h-0.5 mx-1 mb-4 transition-colors ${
+                  i < currentIndex ? (isCancelled && i === currentIndex - 1 ? 'bg-red-300' : 'bg-green-400') : 'bg-slate-200'
+                }`}
+              />
             )}
           </div>
         );

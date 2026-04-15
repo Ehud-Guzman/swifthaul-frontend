@@ -68,6 +68,7 @@ export const jobsApi = {
   create: (data) => api.post('/jobs', data),
   getById: (id) => api.get(`/jobs/${id}`),
   assign: (id, data) => api.patch(`/jobs/${id}/assign`, data),
+  reassign: (id, data) => api.patch(`/jobs/${id}/reassign`, data),
   updateStatus: (id, data) => api.patch(`/jobs/${id}/status`, data),
   cancel: (id, data) => api.patch(`/jobs/${id}/cancel`, data),
   getLogs: (id) => api.get(`/jobs/${id}/logs`),
@@ -88,7 +89,7 @@ export const analyticsApi = {
   vehicles: () => api.get('/analytics/vehicles'),
   drivers: () => api.get('/analytics/drivers'),
   owners: () => api.get('/analytics/owners'),
-  exportJobs: () => api.get('/analytics/export/jobs', { responseType: 'blob' }),
+  exportJobs: (params) => api.get('/analytics/export/jobs', { params, responseType: 'blob' }),
   exportEarnings: () => api.get('/analytics/export/earnings', { responseType: 'blob' }),
 };
 
@@ -104,6 +105,31 @@ export const notificationsApi = {
   getAll: () => api.get('/notifications'),
   markRead: (id) => api.patch(`/notifications/${id}/read`),
   markAllRead: () => api.patch('/notifications/read-all'),
+};
+
+// --- Payouts ---
+export const payoutsApi = {
+  getAll: (params) => api.get('/payouts', { params }),
+  create: (data) => api.post('/payouts', data),
+  review: (id, data) => api.patch(`/payouts/${id}`, data),
+  getSummary: () => api.get('/payouts/summary'),
+};
+
+// --- Disputes ---
+export const disputesApi = {
+  getAll: (params) => api.get('/disputes', { params }),
+  create: (data) => api.post('/disputes', data),
+  resolve: (id, data) => api.patch(`/disputes/${id}`, data),
+};
+
+// --- Earnings (driver) ---
+export const earningsApi = {
+  getDriverEarnings: (params) => api.get('/earnings/driver', { params }),
+};
+
+// --- Audit Log ---
+export const auditLogApi = {
+  getAll: (params) => api.get('/audit-log', { params }),
 };
 
 export default api;

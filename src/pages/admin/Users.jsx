@@ -7,9 +7,13 @@ import Modal from '../../components/ui/Modal';
 import { formatDate } from '../../utils/formatters';
 
 const ROLES = ['', 'admin', 'owner', 'client', 'driver'];
+const PAGE_SIZE = 20;
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState('');
   const [createModal, setCreateModal] = useState(false);
@@ -21,20 +25,34 @@ const AdminUsers = () => {
   const [editTarget, setEditTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState('');
+  const [toggleModal, setToggleModal] = useState(false);
+  const [toggleTarget, setToggleTarget] = useState(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (p = page) => {
     setLoading(true);
-    const params = roleFilter ? { role: roleFilter } : {};
+    const params = { page: p, limit: PAGE_SIZE };
+    if (roleFilter) params.role = roleFilter;
     const { data } = await usersApi.getAll(params);
-    setUsers(data);
+    setUsers(data.users ?? data);
+    setTotal(data.total ?? data.length);
+    setPage(data.page ?? 1);
+    setPages(data.pages ?? 1);
     setLoading(false);
-  }, [roleFilter]);
+  }, [roleFilter, page]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(1); }, [roleFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(page); }, [page]);     // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toggleActive = async (user) => {
-    await usersApi.update(user._id, { is_active: !user.is_active });
-    load();
+  const confirmToggle = (user) => {
+    setToggleTarget(user);
+    setToggleModal(true);
+  };
+
+  const handleToggle = async () => {
+    await usersApi.update(toggleTarget._id, { is_active: !toggleTarget.is_active });
+    setToggleModal(false);
+    setToggleTarget(null);
+    load(page);
   };
 
   const handleCreate = async (e) => {
@@ -45,7 +63,7 @@ const AdminUsers = () => {
       await usersApi.create(form);
       setCreateModal(false);
       setForm({ name: '', email: '', phone: '', password: '', role: 'owner', license_number: '' });
-      load();
+      load(page);
     } catch (err) {
       setError(err.response?.data?.message || 'Creation failed');
     } finally {
@@ -67,7 +85,7 @@ const AdminUsers = () => {
     try {
       await usersApi.update(editTarget._id, editForm);
       setEditModal(false);
-      load();
+      load(page);
     } catch (err) {
       setEditError(err.response?.data?.message || 'Update failed');
     } finally {
@@ -86,7 +104,7 @@ const AdminUsers = () => {
       key: 'actions', label: '', render: (r) => (
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => openEdit(r)}>Edit</Button>
-          <Button size="sm" variant={r.is_active ? 'danger' : 'secondary'} onClick={() => toggleActive(r)}>
+          <Button size="sm" variant={r.is_active ? 'danger' : 'secondary'} onClick={() => confirmToggle(r)}>
             {r.is_active ? 'Deactivate' : 'Activate'}
           </Button>
         </div>
@@ -100,7 +118,7 @@ const AdminUsers = () => {
         <div className="flex gap-2 flex-wrap">
           {ROLES.map((r) => (
             <button key={r}
-              onClick={() => setRoleFilter(r)}
+              onClick={() => { setRoleFilter(r); setPage(1); }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${roleFilter === r ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
               {r ? r.charAt(0).toUpperCase() + r.slice(1) : 'All'}
             </button>
@@ -110,8 +128,39 @@ const AdminUsers = () => {
       </div>
 
       {loading ? <div className="text-slate-400 text-sm">Loading...</div> : (
-        <Table columns={columns} data={users} />
+        <>
+          <Table columns={columns} data={users} />
+          {pages > 1 && (
+            <div className="flex items-center justify-between text-sm text-slate-500 pt-1">
+              <span>{total} total · page {page} of {pages}</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Prev</Button>
+                <Button size="sm" variant="secondary" onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages}>Next</Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
+
+      {/* Toggle Active Confirm Modal */}
+      <Modal open={toggleModal} onClose={() => { setToggleModal(false); setToggleTarget(null); }} title={toggleTarget?.is_active ? 'Deactivate User' : 'Activate User'} size="sm">
+        {toggleTarget && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Are you sure you want to {toggleTarget.is_active ? 'deactivate' : 'activate'} <span className="font-semibold">{toggleTarget.name}</span>?
+              {toggleTarget.is_active && toggleTarget.role === 'driver' && (
+                <span className="block mt-1 text-amber-700">This driver will be marked unavailable for job assignments.</span>
+              )}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button variant="secondary" onClick={() => { setToggleModal(false); setToggleTarget(null); }}>Cancel</Button>
+              <Button variant={toggleTarget.is_active ? 'danger' : 'primary'} onClick={handleToggle}>
+                {toggleTarget.is_active ? 'Deactivate' : 'Activate'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Create User Modal */}
       <Modal open={createModal} onClose={() => setCreateModal(false)} title="Create Account">

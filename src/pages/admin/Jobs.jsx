@@ -8,59 +8,100 @@ import StatusTimeline from '../../components/ui/StatusTimeline';
 import { formatDate, formatKSH } from '../../utils/formatters';
 
 const STATUS_FILTERS = ['', 'pending', 'assigned', 'picked_up', 'in_transit', 'delivered', 'cancelled'];
+const PAGE_SIZE = 20;
 
 const AdminJobs = () => {
   const [jobs, setJobs] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [selected, setSelected] = useState(null);
   const [assignModal, setAssignModal] = useState(false);
+  const [reassignModal, setReassignModal] = useState(false);
   const [detailModal, setDetailModal] = useState(false);
+  const [cancelModal, setCancelModal] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [assignForm, setAssignForm] = useState({ vehicle_id: '', driver_id: '', price_override: '' });
   const [assigning, setAssigning] = useState(false);
+  const [assignError, setAssignError] = useState('');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (p = page) => {
     setLoading(true);
     try {
-      const params = statusFilter ? { status: statusFilter } : {};
+      const params = { page: p, limit: PAGE_SIZE };
+      if (statusFilter) params.status = statusFilter;
       const { data } = await jobsApi.getAll(params);
-      setJobs(data);
+      setJobs(data.jobs);
+      setTotal(data.total);
+      setPage(data.page);
+      setPages(data.pages);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, page]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(1); }, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(page); }, [page]);       // eslint-disable-line react-hooks/exhaustive-deps
 
   const openAssign = async (job) => {
     setSelected(job);
-    const [vRes, uRes] = await Promise.all([vehiclesApi.getAvailable(), usersApi.getAll({ role: 'driver' })]);
+    setAssignError('');
+    const [vRes, uRes] = await Promise.all([vehiclesApi.getAvailable(), usersApi.getAll({ role: 'driver', limit: 200 })]);
     setVehicles(vRes.data);
-    setDrivers(uRes.data);
+    setDrivers(uRes.data.users ?? uRes.data);
     setAssignForm({ vehicle_id: '', driver_id: '', price_override: job.suggested_price });
     setAssignModal(true);
+  };
+
+  const openReassign = async (job) => {
+    setSelected(job);
+    setAssignError('');
+    const [vRes, uRes] = await Promise.all([vehiclesApi.getAvailable(), usersApi.getAll({ role: 'driver', limit: 200 })]);
+    setVehicles(vRes.data);
+    setDrivers(uRes.data.users ?? uRes.data);
+    setAssignForm({ vehicle_id: '', driver_id: '', price_override: job.suggested_price });
+    setReassignModal(true);
   };
 
   const handleAssign = async () => {
     if (!assignForm.vehicle_id || !assignForm.driver_id) return;
     setAssigning(true);
+    setAssignError('');
     try {
       await jobsApi.assign(selected._id, assignForm);
       setAssignModal(false);
-      load();
+      load(page);
     } catch (err) {
-      alert(err.response?.data?.message || 'Assignment failed');
+      setAssignError(err.response?.data?.message || 'Assignment failed');
     } finally {
       setAssigning(false);
     }
   };
 
-  const handleCancel = async (job) => {
-    if (!window.confirm('Cancel this job?')) return;
-    await jobsApi.cancel(job._id, { note: 'Cancelled by admin' });
-    load();
+  const handleReassign = async () => {
+    if (!assignForm.vehicle_id || !assignForm.driver_id) return;
+    setAssigning(true);
+    setAssignError('');
+    try {
+      await jobsApi.reassign(selected._id, assignForm);
+      setReassignModal(false);
+      load(page);
+    } catch (err) {
+      setAssignError(err.response?.data?.message || 'Reassignment failed');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    await jobsApi.cancel(cancelTarget._id, { note: 'Cancelled by admin' });
+    setCancelModal(false);
+    setCancelTarget(null);
+    load(page);
   };
 
   const columns = [
@@ -81,13 +122,50 @@ const AdminJobs = () => {
         <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
           <Button size="sm" variant="secondary" onClick={() => { setSelected(r); setDetailModal(true); }}>View</Button>
           {r.status === 'pending' && <Button size="sm" onClick={() => openAssign(r)}>Assign</Button>}
+          {r.status === 'assigned' && <Button size="sm" variant="outline" onClick={() => openReassign(r)}>Reassign</Button>}
           {!['delivered', 'cancelled'].includes(r.status) && (
-            <Button size="sm" variant="danger" onClick={() => handleCancel(r)}>Cancel</Button>
+            <Button size="sm" variant="danger" onClick={() => { setCancelTarget(r); setCancelModal(true); }}>Cancel</Button>
           )}
         </div>
       ),
     },
   ];
+
+  const AssignFields = () => (
+    <div className="space-y-4">
+      {assignError && <div className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{assignError}</div>}
+      <div className="bg-slate-50 rounded-lg p-4 text-sm space-y-1">
+        <p><span className="font-medium">Route:</span> {selected.pickup_location} → {selected.dropoff_location}</p>
+        <p><span className="font-medium">Cargo:</span> {selected.cargo_type} — {selected.weight_kg} kg</p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle</label>
+        <select value={assignForm.vehicle_id} onChange={(e) => setAssignForm({ ...assignForm, vehicle_id: e.target.value })}
+          className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+          <option value="">Select vehicle</option>
+          {vehicles.map((v) => (
+            <option key={v._id} value={v._id}>{v.name} — {v.plate_number} ({v.type})</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Driver</label>
+        <select value={assignForm.driver_id} onChange={(e) => setAssignForm({ ...assignForm, driver_id: e.target.value })}
+          className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+          <option value="">Select driver</option>
+          {drivers.map((d) => (
+            <option key={d._id} value={d._id}>{d.name} — {d.email}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Price Override (KSH)</label>
+        <input type="number" value={assignForm.price_override}
+          onChange={(e) => setAssignForm({ ...assignForm, price_override: e.target.value })}
+          className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -95,7 +173,7 @@ const AdminJobs = () => {
         {STATUS_FILTERS.map((s) => (
           <button
             key={s}
-            onClick={() => setStatusFilter(s)}
+            onClick={() => { setStatusFilter(s); setPage(1); }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
           >
             {s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'All'}
@@ -104,46 +182,69 @@ const AdminJobs = () => {
       </div>
 
       {loading ? <div className="text-slate-400 text-sm">Loading jobs...</div> : (
-        <Table columns={columns} data={jobs} emptyMessage="No jobs found." />
+        <>
+          <Table columns={columns} data={jobs} emptyMessage="No jobs found." />
+
+          {pages > 1 && (
+            <div className="flex items-center justify-between text-sm text-slate-500 pt-1">
+              <span>{total} total · page {page} of {pages}</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Prev</Button>
+                <Button size="sm" variant="secondary" onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages}>Next</Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Assign Modal */}
       <Modal open={assignModal} onClose={() => setAssignModal(false)} title="Assign Job" size="md">
         {selected && (
           <div className="space-y-4">
-            <div className="bg-slate-50 rounded-lg p-4 text-sm space-y-1">
-              <p><span className="font-medium">Route:</span> {selected.pickup_location} → {selected.dropoff_location}</p>
-              <p><span className="font-medium">Cargo:</span> {selected.cargo_type} — {selected.weight_kg} kg</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle</label>
-              <select value={assignForm.vehicle_id} onChange={(e) => setAssignForm({ ...assignForm, vehicle_id: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
-                <option value="">Select vehicle</option>
-                {vehicles.map((v) => (
-                  <option key={v._id} value={v._id}>{v.name} — {v.plate_number} ({v.type})</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Driver</label>
-              <select value={assignForm.driver_id} onChange={(e) => setAssignForm({ ...assignForm, driver_id: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
-                <option value="">Select driver</option>
-                {drivers.map((d) => (
-                  <option key={d._id} value={d._id}>{d.name} — {d.email}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Price Override (KSH)</label>
-              <input type="number" value={assignForm.price_override}
-                onChange={(e) => setAssignForm({ ...assignForm, price_override: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
-            </div>
+            <AssignFields />
             <div className="flex gap-3 justify-end">
               <Button variant="secondary" onClick={() => setAssignModal(false)}>Cancel</Button>
               <Button onClick={handleAssign} loading={assigning}>Confirm Assignment</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reassign Modal */}
+      <Modal open={reassignModal} onClose={() => setReassignModal(false)} title="Reassign Job" size="md">
+        {selected && (
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-800">
+              The current driver and vehicle will be released and replaced.
+            </div>
+            <AssignFields />
+            <div className="flex gap-3 justify-end">
+              <Button variant="secondary" onClick={() => setReassignModal(false)}>Cancel</Button>
+              <Button onClick={handleReassign} loading={assigning}>Confirm Reassignment</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Cancel Confirm Modal */}
+      <Modal open={cancelModal} onClose={() => { setCancelModal(false); setCancelTarget(null); }} title="Cancel Job" size="sm">
+        {cancelTarget && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Are you sure you want to cancel this job?
+            </p>
+            <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm">
+              <p className="font-medium">{cancelTarget.pickup_location} → {cancelTarget.dropoff_location}</p>
+              <p className="text-slate-500 capitalize">{cancelTarget.cargo_type?.replace(/_/g, ' ')} — {cancelTarget.weight_kg} kg</p>
+            </div>
+            {cancelTarget.status !== 'pending' && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                The assigned driver and vehicle will be released.
+              </p>
+            )}
+            <div className="flex gap-3 justify-end">
+              <Button variant="secondary" onClick={() => { setCancelModal(false); setCancelTarget(null); }}>Keep Job</Button>
+              <Button variant="danger" onClick={handleCancel}>Yes, Cancel Job</Button>
             </div>
           </div>
         )}
@@ -153,7 +254,7 @@ const AdminJobs = () => {
       <Modal open={detailModal} onClose={() => setDetailModal(false)} title="Job Details" size="lg">
         {selected && (
           <div className="space-y-5">
-            <StatusTimeline currentStatus={selected.status} />
+            <StatusTimeline currentStatus={selected.status} cancelledFromStatus={selected.cancelled_from_status} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-slate-400 text-xs">Client</p>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { jobsApi } from '../../services/api';
+import { jobsApi, disputesApi } from '../../services/api';
 import Table from '../../components/ui/Table';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -7,17 +7,41 @@ import Modal from '../../components/ui/Modal';
 import StatusTimeline from '../../components/ui/StatusTimeline';
 import { formatDate, formatKSH } from '../../utils/formatters';
 
+const DISPUTE_TYPES = [
+  { value: 'damage', label: 'Damaged Goods' },
+  { value: 'delay', label: 'Significant Delay' },
+  { value: 'missing_item', label: 'Missing Items' },
+  { value: 'wrong_delivery', label: 'Wrong Delivery Location' },
+  { value: 'overcharge', label: 'Incorrect Charge' },
+  { value: 'other', label: 'Other Issue' },
+];
+
+const DISPUTE_STATUS_COLORS = {
+  open: 'text-amber-600 bg-amber-50',
+  in_review: 'text-blue-600 bg-blue-50',
+  resolved: 'text-green-700 bg-green-50',
+  closed: 'text-slate-500 bg-slate-100',
+};
+
 const ClientMyJobs = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [detailModal, setDetailModal] = useState(false);
+  const [cancelModal, setCancelModal] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [disputeModal, setDisputeModal] = useState(false);
+  const [disputeJob, setDisputeJob] = useState(null);
+  const [disputeForm, setDisputeForm] = useState({ type: 'damage', description: '' });
+  const [submittingDispute, setSubmittingDispute] = useState(false);
+  const [disputeError, setDisputeError] = useState('');
+  const [disputeSuccess, setDisputeSuccess] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await jobsApi.getAll();
-    setJobs(data);
+    setJobs(data.jobs ?? data);
     setLoading(false);
   }, []);
 
@@ -30,10 +54,33 @@ const ClientMyJobs = () => {
     setDetailModal(true);
   };
 
-  const handleCancel = async (job) => {
-    if (!window.confirm('Cancel this job?')) return;
-    await jobsApi.cancel(job._id, { note: 'Cancelled by client' });
+  const handleCancel = async () => {
+    await jobsApi.cancel(cancelTarget._id, { note: 'Cancelled by client' });
+    setCancelModal(false);
+    setCancelTarget(null);
     load();
+  };
+
+  const openDisputeModal = (job) => {
+    setDisputeJob(job);
+    setDisputeForm({ type: 'damage', description: '' });
+    setDisputeError('');
+    setDisputeSuccess(false);
+    setDisputeModal(true);
+  };
+
+  const handleDispute = async (e) => {
+    e.preventDefault();
+    setDisputeError('');
+    setSubmittingDispute(true);
+    try {
+      await disputesApi.create({ job_id: disputeJob._id, ...disputeForm });
+      setDisputeSuccess(true);
+    } catch (err) {
+      setDisputeError(err.response?.data?.message || 'Failed to submit dispute');
+    } finally {
+      setSubmittingDispute(false);
+    }
   };
 
   const columns = [
@@ -46,10 +93,13 @@ const ClientMyJobs = () => {
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions', label: '', render: (r) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="secondary" onClick={() => openDetail(r)}>Track</Button>
           {r.status === 'pending' && (
-            <Button size="sm" variant="danger" onClick={() => handleCancel(r)}>Cancel</Button>
+            <Button size="sm" variant="danger" onClick={() => { setCancelTarget(r); setCancelModal(true); }}>Cancel</Button>
+          )}
+          {['picked_up', 'in_transit', 'delivered', 'cancelled'].includes(r.status) && (
+            <Button size="sm" variant="outline" onClick={() => openDisputeModal(r)}>Report Issue</Button>
           )}
         </div>
       ),
@@ -62,10 +112,27 @@ const ClientMyJobs = () => {
         <Table columns={columns} data={jobs} emptyMessage="No jobs submitted yet." />
       )}
 
+      {/* Cancel Confirm Modal */}
+      <Modal open={cancelModal} onClose={() => { setCancelModal(false); setCancelTarget(null); }} title="Cancel Job" size="sm">
+        {cancelTarget && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">Are you sure you want to cancel this job?</p>
+            <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm">
+              <p className="font-medium">{cancelTarget.pickup_location} → {cancelTarget.dropoff_location}</p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="secondary" onClick={() => { setCancelModal(false); setCancelTarget(null); }}>Keep Job</Button>
+              <Button variant="danger" onClick={handleCancel}>Yes, Cancel</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Track Detail Modal */}
       <Modal open={detailModal} onClose={() => setDetailModal(false)} title="Job Tracking" size="lg">
         {selected && (
           <div className="space-y-5">
-            <StatusTimeline currentStatus={selected.status} />
+            <StatusTimeline currentStatus={selected.status} cancelledFromStatus={selected.cancelled_from_status} />
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div><p className="text-slate-400 text-xs">Pickup</p><p className="font-medium">{selected.pickup_location}</p></div>
@@ -96,6 +163,55 @@ const ClientMyJobs = () => {
               </div>
             )}
           </div>
+        )}
+      </Modal>
+
+      {/* Report Issue Modal */}
+      <Modal open={disputeModal} onClose={() => setDisputeModal(false)} title="Report an Issue" size="sm">
+        {disputeJob && (
+          disputeSuccess ? (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-800">
+                Your dispute has been submitted. Our team will review it and get back to you shortly.
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setDisputeModal(false)}>Close</Button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleDispute} className="space-y-4">
+              {disputeError && <div className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{disputeError}</div>}
+              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm">
+                <p className="font-medium">{disputeJob.pickup_location} → {disputeJob.dropoff_location}</p>
+                <p className="text-slate-400 text-xs">Job #{disputeJob._id.slice(-6)}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Issue Type</label>
+                <select
+                  value={disputeForm.type}
+                  onChange={(e) => setDisputeForm({ ...disputeForm, type: e.target.value })}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                >
+                  {DISPUTE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={disputeForm.description}
+                  onChange={(e) => setDisputeForm({ ...disputeForm, description: e.target.value })}
+                  placeholder="Please describe the issue in detail..."
+                  className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <Button type="button" variant="secondary" onClick={() => setDisputeModal(false)}>Cancel</Button>
+                <Button type="submit" loading={submittingDispute}>Submit Report</Button>
+              </div>
+            </form>
+          )
         )}
       </Modal>
     </div>

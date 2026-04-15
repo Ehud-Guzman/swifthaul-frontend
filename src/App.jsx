@@ -23,11 +23,15 @@ import AdminUsers from './pages/admin/Users';
 import AdminVehicles from './pages/admin/Vehicles';
 import AdminPricing from './pages/admin/Pricing';
 import AdminAnalytics from './pages/admin/Analytics';
+import AdminPayouts from './pages/admin/Payouts';
+import AdminDisputes from './pages/admin/Disputes';
+import AdminAuditLog from './pages/admin/AuditLog';
 
 // Owner pages
 import OwnerDashboard from './pages/owner/Dashboard';
 import OwnerVehicles from './pages/owner/Vehicles';
 import OwnerEarnings from './pages/owner/Earnings';
+import OwnerJobs from './pages/owner/Jobs';
 
 // Client pages
 import ClientDashboard from './pages/client/Dashboard';
@@ -37,6 +41,7 @@ import ClientMyJobs from './pages/client/MyJobs';
 // Driver pages
 import DriverDashboard from './pages/driver/Dashboard';
 import DriverJobs from './pages/driver/JobDetail';
+import DriverEarnings from './pages/driver/Earnings';
 
 const RootRedirect = () => {
   const { user } = useAuth();
@@ -63,12 +68,16 @@ const App = () => (
       <Route path="vehicles" element={<AdminVehicles />} />
       <Route path="pricing" element={<AdminPricing />} />
       <Route path="analytics" element={<AdminAnalytics />} />
+      <Route path="payouts" element={<AdminPayouts />} />
+      <Route path="disputes" element={<AdminDisputes />} />
+      <Route path="audit-log" element={<AdminAuditLog />} />
     </Route>
 
     {/* Owner */}
     <Route path="/owner" element={<ProtectedRoute roles={['owner']}><RoleLayout /></ProtectedRoute>}>
       <Route index element={<OwnerDashboard />} />
       <Route path="vehicles" element={<OwnerVehicles />} />
+      <Route path="jobs" element={<OwnerJobs />} />
       <Route path="earnings" element={<OwnerEarnings />} />
     </Route>
 
@@ -83,6 +92,7 @@ const App = () => (
     <Route path="/driver" element={<ProtectedRoute roles={['driver']}><RoleLayout /></ProtectedRoute>}>
       <Route index element={<DriverDashboard />} />
       <Route path="jobs" element={<DriverJobs />} />
+      <Route path="earnings" element={<DriverEarnings />} />
     </Route>
 
     {/* Fallback */}

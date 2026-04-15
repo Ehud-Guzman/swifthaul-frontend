@@ -8,9 +8,13 @@ import { formatDate, vehicleTypeLabel } from '../../utils/formatters';
 
 const STATUS_FILTERS = ['', 'available', 'assigned', 'maintenance'];
 const VEHICLE_TYPES = ['mini_van', 'truck_3t', 'flatbed', 'semi_trailer'];
+const PAGE_SIZE = 20;
 
 const AdminVehicles = () => {
   const [vehicles, setVehicles] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -22,18 +26,24 @@ const AdminVehicles = () => {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (p = page) => {
     setLoading(true);
-    const { data } = await vehiclesApi.getAll(statusFilter ? { status: statusFilter } : {});
-    setVehicles(data);
+    const params = { page: p, limit: PAGE_SIZE };
+    if (statusFilter) params.status = statusFilter;
+    const { data } = await vehiclesApi.getAll(params);
+    setVehicles(data.vehicles ?? data);
+    setTotal(data.total ?? data.length);
+    setPage(data.page ?? 1);
+    setPages(data.pages ?? 1);
     setLoading(false);
-  }, [statusFilter]);
+  }, [statusFilter, page]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(1); }, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(page); }, [page]);       // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    usersApi.getAll({ role: 'owner' }).then(({ data }) => {
-      setOwners(data);
+    usersApi.getAll({ role: 'owner', limit: 200 }).then(({ data }) => {
+      setOwners(data.users ?? data);
     });
   }, []);
 
@@ -46,7 +56,7 @@ const AdminVehicles = () => {
   const handleStatusChange = async () => {
     await vehiclesApi.update(selected._id, { status: newStatus });
     setStatusModal(false);
-    load();
+    load(page);
   };
 
   const openAddModal = () => {
@@ -62,7 +72,7 @@ const AdminVehicles = () => {
     try {
       await vehiclesApi.create(form);
       setAddModal(false);
-      load();
+      load(page);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add vehicle');
     } finally {
@@ -92,7 +102,7 @@ const AdminVehicles = () => {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-2 flex-wrap">
           {STATUS_FILTERS.map((s) => (
-            <button key={s} onClick={() => setStatusFilter(s)}
+            <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
               {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
             </button>
@@ -102,7 +112,18 @@ const AdminVehicles = () => {
       </div>
 
       {loading ? <div className="text-slate-400 text-sm">Loading...</div> : (
-        <Table columns={columns} data={vehicles} />
+        <>
+          <Table columns={columns} data={vehicles} />
+          {pages > 1 && (
+            <div className="flex items-center justify-between text-sm text-slate-500 pt-1">
+              <span>{total} total · page {page} of {pages}</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Prev</Button>
+                <Button size="sm" variant="secondary" onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages}>Next</Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Change Status Modal */}

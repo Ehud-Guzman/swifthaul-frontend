@@ -11,7 +11,7 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    jobsApi.getAll().then((r) => setJobs(r.data)).finally(() => setLoading(false));
+    jobsApi.getAll().then((r) => setJobs(r.data.jobs ?? r.data)).finally(() => setLoading(false));
   }, []);
 
   const active = jobs.find((j) => ['picked_up', 'in_transit'].includes(j.status));
