@@ -5,6 +5,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import StatusTimeline from '../../components/ui/StatusTimeline';
+import MpesaPayCard from '../../components/payments/MpesaPayCard';
 import { formatDate, formatKSH } from '../../utils/formatters';
 
 const DISPUTE_TYPES = [
@@ -37,6 +38,8 @@ const ClientMyJobs = () => {
   const [submittingDispute, setSubmittingDispute] = useState(false);
   const [disputeError, setDisputeError] = useState('');
   const [disputeSuccess, setDisputeSuccess] = useState(false);
+  const [payModal, setPayModal] = useState(false);
+  const [payJob, setPayJob] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,12 +98,16 @@ const ClientMyJobs = () => {
     { key: 'price', label: 'Price', render: (r) => formatKSH(r.final_price ?? r.suggested_price) },
     { key: 'date', label: 'Pref. Date', render: (r) => formatDate(r.preferred_date) },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
+    { key: 'payment', label: 'Payment', render: (r) => <Badge status={r.payment_status || 'unpaid'} /> },
     {
       key: 'actions', label: '', render: (r) => (
         <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="secondary" onClick={() => openDetail(r)}>Track</Button>
           {r.status === 'pending' && (
             <Button size="sm" variant="danger" onClick={() => { setCancelTarget(r); setCancelModal(true); }}>Cancel</Button>
+          )}
+          {r.payment_status !== 'paid' && r.status !== 'cancelled' && (
+            <Button size="sm" onClick={() => { setPayJob(r); setPayModal(true); }}>Pay Now</Button>
           )}
           {['picked_up', 'in_transit', 'delivered', 'cancelled'].includes(r.status) && (
             <Button size="sm" variant="outline" onClick={() => openDisputeModal(r)}>Report Issue</Button>
@@ -170,6 +177,19 @@ const ClientMyJobs = () => {
               </div>
             )}
           </div>
+        )}
+      </Modal>
+
+      {/* Pay Modal */}
+      <Modal open={payModal} onClose={() => { setPayModal(false); setPayJob(null); }} title="Pay for Shipment" size="sm">
+        {payJob && (
+          <MpesaPayCard
+            trackingCode={payJob.tracking_code}
+            amount={payJob.final_price ?? payJob.suggested_price}
+            paymentStatus={payJob.payment_status}
+            defaultPhone={payJob.client_id?.phone || ''}
+            onPaid={() => { load(); setPayModal(false); setPayJob(null); }}
+          />
         )}
       </Modal>
 

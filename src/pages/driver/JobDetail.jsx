@@ -1,11 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { jobsApi } from '../../services/api';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import StatusTimeline from '../../components/ui/StatusTimeline';
 import { formatDate, formatKSH } from '../../utils/formatters';
-import { MapPin, Package, User, Lock } from 'lucide-react';
+import { MapPin, Package, User, Lock, Navigation } from 'lucide-react';
+
+// Push a fresh GPS fix at most this often, even if the browser reports
+// positions more frequently (watchPosition can fire every few seconds).
+const LOCATION_PUSH_INTERVAL_MS = 15000;
 
 const STATUS_NEXT = {
   assigned: { next: 'picked_up', label: 'Mark as Picked Up' },
@@ -21,8 +25,56 @@ const DriverJobs = () => {
   const [noteModal, setNoteModal] = useState(false);
   const [note, setNote] = useState('');
   const [updateError, setUpdateError] = useState('');
+  const [sharingJobId, setSharingJobId] = useState(null);
+  const [locationError, setLocationError] = useState('');
+  const watchIdRef = useRef(null);
+  const lastSentRef = useRef(0);
 
   const hasActiveJob = jobs.some((j) => ['picked_up', 'in_transit'].includes(j.status));
+
+  const stopSharing = useCallback(() => {
+    if (watchIdRef.current != null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setSharingJobId(null);
+  }, []);
+
+  const startSharing = useCallback((jobId) => {
+    if (!navigator.geolocation) {
+      setLocationError('Location sharing is not supported on this device.');
+      return;
+    }
+    setLocationError('');
+    lastSentRef.current = 0;
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        if (now - lastSentRef.current < LOCATION_PUSH_INTERVAL_MS) return;
+        lastSentRef.current = now;
+        jobsApi
+          .updateLocation(jobId, { lat: pos.coords.latitude, lng: pos.coords.longitude })
+          .catch(() => {});
+      },
+      () => {
+        setLocationError('Could not access your location. Check location permissions and try again.');
+        stopSharing();
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+    );
+    setSharingJobId(jobId);
+  }, [stopSharing]);
+
+  // Stop sharing if this job leaves the active statuses (e.g. marked delivered)
+  useEffect(() => {
+    if (!sharingJobId) return;
+    const job = jobs.find((j) => j._id === sharingJobId);
+    if (!job || !['picked_up', 'in_transit'].includes(job.status)) stopSharing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobs, sharingJobId]);
+
+  // Stop the GPS watch when the driver navigates away from this page
+  useEffect(() => () => stopSharing(), [stopSharing]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,6 +130,35 @@ const DriverJobs = () => {
             )}
 
             <StatusTimeline currentStatus={job.status} />
+
+            {isActive && (
+              <div className="flex items-center justify-between bg-slate-50 rounded-xl px-3.5 py-2.5">
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <Navigation size={14} className={sharingJobId === job._id ? 'text-orange-500' : 'text-slate-400'} />
+                  {sharingJobId === job._id ? (
+                    <span className="flex items-center gap-1.5 font-medium text-orange-600">
+                      <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
+                      Sharing live location
+                    </span>
+                  ) : (
+                    'Location not shared — client can\'t see live position'
+                  )}
+                </div>
+                <button
+                  onClick={() => (sharingJobId === job._id ? stopSharing() : startSharing(job._id))}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                    sharingJobId === job._id
+                      ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                      : 'bg-orange-500 text-white hover:bg-orange-600'
+                  }`}
+                >
+                  {sharingJobId === job._id ? 'Stop Sharing' : 'Share Location'}
+                </button>
+              </div>
+            )}
+            {isActive && sharingJobId === job._id && locationError && (
+              <p className="text-xs text-red-600">{locationError}</p>
+            )}
 
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex gap-2">

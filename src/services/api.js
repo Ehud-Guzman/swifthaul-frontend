@@ -94,6 +94,7 @@ export const jobsApi = {
   assign: (id, data) => api.patch(`/jobs/${id}/assign`, data),
   reassign: (id, data) => api.patch(`/jobs/${id}/reassign`, data),
   updateStatus: (id, data) => api.patch(`/jobs/${id}/status`, data),
+  updateLocation: (id, data) => api.patch(`/jobs/${id}/location`, data),
   cancel: (id, data) => api.patch(`/jobs/${id}/cancel`, data),
   getLogs: (id) => api.get(`/jobs/${id}/logs`),
 };
@@ -122,6 +123,13 @@ export const publicApi = {
   estimate: (data) => publicClient.post('/public/estimate', data),
   submitQuote: (data) => publicClient.post('/public/quote', data),
   track: (code) => publicClient.get(`/public/track/${encodeURIComponent(code)}`),
+};
+
+// --- Payments (M-Pesa) — public: guests pay via tracking code, same as tracking ---
+export const paymentsApi = {
+  getMpesaConfig: () => publicClient.get('/payments/mpesa/config'),
+  initiate: (data) => publicClient.post('/payments/mpesa/initiate', data),
+  getStatus: (checkoutRequestId) => publicClient.get(`/payments/mpesa/status/${encodeURIComponent(checkoutRequestId)}`),
 };
 
 // --- Drivers ---

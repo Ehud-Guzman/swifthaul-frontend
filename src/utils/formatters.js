@@ -21,6 +21,9 @@ export const statusColor = (status) => {
     cancelled: 'bg-red-100 text-red-800',
     available: 'bg-green-100 text-green-800',
     maintenance: 'bg-orange-100 text-orange-800',
+    unpaid: 'bg-gray-100 text-gray-700',
+    paid: 'bg-green-100 text-green-800',
+    failed: 'bg-red-100 text-red-800',
   };
   return map[status] || 'bg-gray-100 text-gray-700';
 };

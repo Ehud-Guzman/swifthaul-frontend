@@ -3,6 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Truck, ArrowLeft, Search, MapPin, Package, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { publicApi } from '../../services/api';
 import { formatDate, formatDateTime, statusLabel } from '../../utils/formatters';
+import ShipmentMap from '../../components/map/ShipmentMap';
+import MpesaPayCard from '../../components/payments/MpesaPayCard';
+
+const LIVE_STATUSES = ['picked_up', 'in_transit'];
 
 const STATUS_ORDER = ['pending', 'assigned', 'picked_up', 'in_transit', 'delivered'];
 
@@ -52,6 +56,23 @@ const TrackShipment = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // While the shipment is actually moving, poll quietly (no spinner/reset)
+  // so the map and status refresh without the page flashing empty.
+  useEffect(() => {
+    if (!LIVE_STATUSES.includes(result?.job?.status)) return;
+    const code = result.job.tracking_code;
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await publicApi.track(code);
+        setResult(data);
+      } catch {
+        // Silent — the next tick will retry, and any real error already
+        // surfaced to the user on the initial lookup.
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [result?.job?.status, result?.job?.tracking_code]);
 
   const { job, logs } = result || {};
   const meta = job ? (STATUS_META[job.status] || STATUS_META.pending) : null;
@@ -124,6 +145,16 @@ const TrackShipment = () => {
               </div>
             </div>
 
+            {/* Payment */}
+            {job.status !== 'cancelled' && (
+              <MpesaPayCard
+                trackingCode={job.tracking_code}
+                amount={job.final_price ?? job.suggested_price}
+                paymentStatus={job.payment_status}
+                onPaid={() => runTrack(job.tracking_code)}
+              />
+            )}
+
             {/* Job details */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
               <h2 className="font-semibold text-slate-800">Shipment Details</h2>
@@ -162,6 +193,26 @@ const TrackShipment = () => {
                 </div>
               </div>
             </div>
+
+            {/* Live map — shown once we have at least one resolved point */}
+            {(job.pickup_coords?.lat != null || job.dropoff_coords?.lat != null || job.current_location?.lat != null) && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-slate-800">Live Map</h2>
+                  {job.current_location?.lat != null && (
+                    <span className="flex items-center gap-1.5 bg-orange-50 text-orange-600 text-xs font-semibold px-2.5 py-1 rounded-full border border-orange-200">
+                      <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
+                      Updated {formatDateTime(job.current_location.updated_at)}
+                    </span>
+                  )}
+                </div>
+                <ShipmentMap
+                  pickupCoords={job.pickup_coords}
+                  dropoffCoords={job.dropoff_coords}
+                  currentLocation={job.current_location}
+                />
+              </div>
+            )}
 
             {/* Progress bar — only for active statuses */}
             {job.status !== 'cancelled' && (

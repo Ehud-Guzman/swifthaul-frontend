@@ -186,6 +186,7 @@ const AdminJobs = () => {
     { key: 'price', label: 'Price', render: (r) => formatKSH(r.final_price ?? r.suggested_price) },
     { key: 'date', label: 'Pref. Date', render: (r) => formatDate(r.preferred_date) },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
+    { key: 'payment', label: 'Payment', render: (r) => <Badge status={r.payment_status || 'unpaid'} /> },
     {
       key: 'actions', label: '', render: (r) => (
         <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
