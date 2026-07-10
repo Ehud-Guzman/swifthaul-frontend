@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Truck, ArrowLeft, Search, MapPin, Package, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { publicApi } from '../../services/api';
 import { formatDate, formatDateTime, statusLabel } from '../../utils/formatters';
@@ -17,19 +17,19 @@ const STATUS_META = {
 
 const TrackShipment = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [trackingId, setTrackingId] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleTrack = async (e) => {
-    e.preventDefault();
-    if (!trackingId.trim()) return;
+  const runTrack = async (code) => {
+    if (!code.trim()) return;
     setError('');
     setResult(null);
     setLoading(true);
     try {
-      const { data } = await publicApi.track(trackingId.trim());
+      const { data } = await publicApi.track(code.trim());
       setResult(data);
     } catch (err) {
       setError(err.response?.data?.message || 'Could not find that tracking code. Please double-check and try again.');
@@ -37,6 +37,21 @@ const TrackShipment = () => {
       setLoading(false);
     }
   };
+
+  const handleTrack = (e) => {
+    e.preventDefault();
+    runTrack(trackingId);
+  };
+
+  // Deep link support: /track?id=SH-XXXX from the landing tracking widget
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id) {
+      setTrackingId(id);
+      runTrack(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { job, logs } = result || {};
   const meta = job ? (STATUS_META[job.status] || STATUS_META.pending) : null;

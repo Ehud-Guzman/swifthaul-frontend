@@ -8,7 +8,7 @@ const SERVICES = [
 ];
 
 const ServicesSection = () => (
-  <section className="py-20 bg-slate-50">
+  <section id="services" className="py-20 bg-slate-50 scroll-mt-16">
     <div className="max-w-6xl mx-auto px-6">
       <div className="text-center mb-12">
         <h2 className="text-3xl font-bold mb-3">What We Move</h2>

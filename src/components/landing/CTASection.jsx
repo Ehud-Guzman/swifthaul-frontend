@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin } from 'lucide-react';
+import { ArrowRight, MapPin, Phone, MessageCircle } from 'lucide-react';
 
 const CTASection = () => {
   const navigate = useNavigate();
@@ -23,10 +23,27 @@ const CTASection = () => {
             Create an Account
           </button>
         </div>
-        <p className="mt-6 text-orange-200 text-sm flex items-center justify-center gap-2">
-          <MapPin size={14} />
-          Serving Nairobi, Mombasa, Kisumu, Eldoret &amp; more
-        </p>
+
+        {/* Contact channels */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-orange-100 text-sm font-medium">
+          <a href="tel:+254700123456" className="flex items-center gap-2 hover:text-white transition-colors">
+            <Phone size={15} />
+            +254 700 123 456
+          </a>
+          <a
+            href="https://wa.me/254700123456"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 hover:text-white transition-colors"
+          >
+            <MessageCircle size={15} />
+            WhatsApp us
+          </a>
+          <span className="flex items-center gap-2 text-orange-200">
+            <MapPin size={14} />
+            Serving Nairobi, Mombasa, Kisumu, Eldoret &amp; more
+          </span>
+        </div>
       </div>
     </section>
   );

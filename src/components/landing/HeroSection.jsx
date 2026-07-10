@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Search, MapPin, CheckCircle2, Truck } from 'lucide-react';
+import { ArrowRight, Search, MapPin, CheckCircle2, Truck, PackageSearch } from 'lucide-react';
 
 const STATS = [
   { value: '500+', label: 'Deliveries completed' },
@@ -10,6 +11,13 @@ const STATS = [
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const [trackId, setTrackId] = useState('');
+
+  const handleTrackSubmit = (e) => {
+    e.preventDefault();
+    const id = trackId.trim();
+    navigate(id ? `/track?id=${encodeURIComponent(id)}` : '/track');
+  };
 
   return (
     <section
@@ -24,12 +32,10 @@ const HeroSection = () => {
       <div className="absolute -top-32 -left-32 w-125 h-125 bg-orange-400/12 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-100 h-100 bg-orange-400/8 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-6 pt-14 pb-24 md:pt-16 md:pb-32 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div className="relative max-w-7xl mx-auto px-6 pt-14 pb-16 md:pt-16 md:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
         {/* ── Left: Copy ── */}
         <div>
-    
-
           {/* Headline */}
           <h1 className="text-5xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-6 text-slate-900">
             Move Cargo
@@ -78,14 +84,34 @@ const HeroSection = () => {
               Track Shipment
             </button>
           </div>
+
+          {/* Pricing signal */}
+          <p className="mt-5 text-xs text-slate-400">
+            Transparent per-kilometre rates by vehicle class — instant estimate, no signup.
+          </p>
         </div>
 
-        {/* ── Right: Shipment card mockup ── */}
-        <div className="hidden lg:flex justify-center items-center">
-          <div className="relative w-full max-w-sm">
+        {/* ── Right: Truck photo with shipment card overlay ── */}
+        <div className="hidden lg:block relative pb-10 pl-10">
 
-            {/* Card — kept dark for contrast */}
-            <div className="bg-slate-900 border border-slate-700/60 rounded-2xl p-6 shadow-2xl shadow-slate-900/20 ring-1 ring-slate-900/5">
+          {/* Real fleet photo */}
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/20 ring-1 ring-slate-900/10">
+            <img
+              src="/fleet/Isuzu-FRR-Truck.jpg"
+              alt="SwiftHaul freight truck on the road in Kenya"
+              className="w-full h-115 object-cover"
+            />
+            <div className="absolute inset-0 bg-linear-to-t from-slate-900/60 via-slate-900/10 to-transparent" />
+
+            {/* Floating badge */}
+            <div className="absolute top-4 right-4 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+              Real-time tracking
+            </div>
+          </div>
+
+          {/* Shipment card — overlaps the photo */}
+          <div className="absolute bottom-0 left-0 w-full max-w-sm">
+            <div className="bg-slate-900 border border-slate-700/60 rounded-2xl p-6 shadow-2xl shadow-slate-900/40 ring-1 ring-slate-900/5">
 
               {/* Card header */}
               <div className="flex items-center justify-between mb-5">
@@ -141,12 +167,38 @@ const HeroSection = () => {
                 <MapPin size={15} className="text-slate-500 ml-auto shrink-0" />
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Floating badge */}
-            <div className="absolute -top-4 -right-4 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg shadow-orange-200">
-              Real-time tracking
+      {/* ── Tracking widget ── */}
+      <div className="relative max-w-7xl mx-auto px-6 pb-12">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-lg shadow-slate-900/5 p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+              <PackageSearch size={19} className="text-orange-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm text-slate-900">Already shipped with us?</p>
+              <p className="text-xs text-slate-500">Track your cargo with the ID from your confirmation.</p>
             </div>
           </div>
+          <form onSubmit={handleTrackSubmit} className="flex flex-1 gap-2">
+            <input
+              type="text"
+              value={trackId}
+              onChange={(e) => setTrackId(e.target.value)}
+              placeholder="Enter tracking ID, e.g. SH-A7K2M9QX"
+              className="flex-1 min-w-0 px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+            />
+            <button
+              type="submit"
+              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shrink-0"
+            >
+              <Search size={15} />
+              Track
+            </button>
+          </form>
         </div>
       </div>
 

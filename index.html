@@ -39,6 +39,28 @@
 
     <!-- Theme -->
     <meta name="theme-color" content="#f97316" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "MovingCompany",
+        "name": "SwiftHaul Logistics",
+        "url": "https://swifthaul-frontend.netlify.app/",
+        "logo": "https://swifthaul-frontend.netlify.app/favicon.svg",
+        "image": "https://swifthaul-frontend.netlify.app/fleet/Isuzu-FRR-Truck.jpg",
+        "description": "Freight and cargo transport across Kenya — verified drivers, real-time tracking, and the right vehicle for every load, from a mini van to a 30-tonne semi-trailer.",
+        "telephone": "+254700123456",
+        "email": "hello@swifthaul.co.ke",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Nairobi",
+          "addressCountry": "KE"
+        },
+        "areaServed": ["Nairobi", "Mombasa", "Kisumu", "Eldoret", "Nakuru", "Thika", "Naivasha", "Machakos"],
+        "openingHours": "Mo-Sa 07:00-19:00"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

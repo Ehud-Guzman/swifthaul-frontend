@@ -20,6 +20,24 @@ const LandingNav = () => {
           </span>
         </div>
 
+        {/* Section links */}
+        <div className="hidden lg:flex items-center gap-1">
+          {[
+            { label: 'Services', href: '#services' },
+            { label: 'Fleet', href: '#fleet' },
+            { label: 'How It Works', href: '#how-it-works' },
+            { label: 'FAQ', href: '#faq' },
+          ].map(({ label, href }) => (
+            <a
+              key={label}
+              href={href}
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              {label}
+            </a>
+          ))}
+        </div>
+
         {/* Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
           <button

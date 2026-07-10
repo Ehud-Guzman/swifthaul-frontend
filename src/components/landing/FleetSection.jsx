@@ -6,7 +6,7 @@ const VEHICLES = [
 ];
 
 const FleetSection = () => (
-  <section className="py-20">
+  <section id="fleet" className="py-20 scroll-mt-16">
     <div className="max-w-6xl mx-auto px-6">
       <div className="text-center mb-12">
         <h2 className="text-3xl font-bold mb-3">Our Fleet</h2>
