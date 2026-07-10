@@ -87,31 +87,87 @@ const HeroSection = () => {
 
           {/* Pricing signal */}
           <p className="mt-5 text-xs text-slate-400">
-            Transparent per-kilometre rates by vehicle class — instant estimate, no signup.
+            Transparent rates by cargo weight and vehicle class — instant estimate, no signup.
           </p>
         </div>
 
-        {/* ── Right: Truck photo with shipment card overlay ── */}
-        <div className="hidden lg:block relative pb-10 pl-10">
+        {/* ── Right: Live route panel with shipment card overlay ── */}
+        <div className="hidden lg:block relative">
 
-          {/* Real fleet photo */}
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/20 ring-1 ring-slate-900/10">
-            <img
-              src="/fleet/Isuzu-FRR-Truck.jpg"
-              alt="SwiftHaul freight truck on the road in Kenya"
-              className="w-full h-115 object-cover"
+          {/* Route panel */}
+          <div className="relative h-115 rounded-3xl overflow-hidden bg-slate-900 ring-1 ring-slate-800 shadow-2xl shadow-slate-900/30">
+
+            {/* Dot grid */}
+            <div
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage: 'radial-gradient(circle, rgba(148,163,184,0.4) 1px, transparent 1px)',
+                backgroundSize: '26px 26px',
+              }}
             />
-            <div className="absolute inset-0 bg-linear-to-t from-slate-900/60 via-slate-900/10 to-transparent" />
+
+            {/* Ambient glows */}
+            <div className="absolute -top-24 -right-24 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Dashed route: Nairobi → Mombasa */}
+            <svg viewBox="0 0 560 460" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+              <path
+                d="M 100 75 C 220 85, 280 155, 345 205 S 435 285, 460 340"
+                fill="none"
+                stroke="#f97316"
+                strokeOpacity="0.28"
+                strokeWidth="6"
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+              <path
+                d="M 100 75 C 220 85, 280 155, 345 205 S 435 285, 460 340"
+                fill="none"
+                stroke="#fb923c"
+                strokeWidth="2"
+                strokeDasharray="7 9"
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+
+            {/* Origin marker */}
+            <div className="absolute flex items-center gap-2" style={{ left: 'calc(17.9% - 6px)', top: 'calc(16.3% - 6px)' }}>
+              <span className="relative flex w-3 h-3 shrink-0">
+                <span className="absolute inline-flex w-full h-full rounded-full bg-orange-400 opacity-40 animate-ping" />
+                <span className="relative inline-flex w-3 h-3 rounded-full bg-orange-400 ring-4 ring-orange-400/20" />
+              </span>
+              <span className="bg-slate-800/90 border border-slate-700 text-slate-200 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap backdrop-blur-sm">
+                Nairobi · Picked up
+              </span>
+            </div>
+
+            {/* Destination marker */}
+            <div className="absolute flex flex-row-reverse items-center gap-2" style={{ right: 'calc(17.9% - 6px)', top: 'calc(73.9% - 6px)' }}>
+              <span className="relative inline-flex w-3 h-3 shrink-0 rounded-full bg-slate-500 ring-4 ring-slate-500/20" />
+              <span className="bg-slate-800/90 border border-slate-700 text-slate-400 text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap backdrop-blur-sm">
+                Mombasa · ETA 16:30
+              </span>
+            </div>
+
+            {/* Truck in motion */}
+            <div className="absolute" style={{ left: 'calc(69.6% - 18px)', top: 'calc(53.3% - 18px)' }}>
+              <span className="absolute inset-0 rounded-xl bg-orange-500/40 animate-ping" />
+              <div className="relative w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/40 ring-4 ring-orange-500/20">
+                <Truck size={17} className="text-white" />
+              </div>
+            </div>
 
             {/* Floating badge */}
-            <div className="absolute top-4 right-4 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+            <div className="absolute top-4 right-4 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg shadow-orange-900/30">
               Real-time tracking
             </div>
           </div>
 
-          {/* Shipment card — overlaps the photo */}
-          <div className="absolute bottom-0 left-0 w-full max-w-sm">
-            <div className="bg-slate-900 border border-slate-700/60 rounded-2xl p-6 shadow-2xl shadow-slate-900/40 ring-1 ring-slate-900/5">
+          {/* Shipment card — overlaps the panel */}
+          <div className="absolute -bottom-8 -left-6 w-full max-w-sm">
+            <div className="bg-slate-950 border border-slate-700/70 rounded-2xl p-6 shadow-2xl shadow-slate-950/60 ring-1 ring-white/5">
 
               {/* Card header */}
               <div className="flex items-center justify-between mb-5">

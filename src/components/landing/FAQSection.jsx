@@ -3,7 +3,7 @@ import { ChevronDown, MapPin } from 'lucide-react';
 const FAQS = [
   {
     q: 'How is the price calculated?',
-    a: 'Rates are per kilometre and depend on the vehicle class your cargo needs. You get an instant estimate before you confirm — no hidden fees, and the final price is confirmed when your driver is assigned.',
+    a: 'Pricing is based on your cargo weight and the vehicle class it needs. You get an instant estimate before you confirm — no hidden fees, and the final price is confirmed when your driver is assigned.',
   },
   {
     q: 'Do I need an account to ship?',
