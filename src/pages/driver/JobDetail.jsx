@@ -97,7 +97,7 @@ const DriverJobs = () => {
               </div>
               <div className="flex gap-2">
                 <User size={14} className="text-slate-400 shrink-0 mt-0.5" />
-                <div><p className="text-xs text-slate-400">Client</p><p className="font-medium">{job.client_id?.name}</p></div>
+                <div><p className="text-xs text-slate-400">Client</p><p className="font-medium">{job.client_id?.name || job.guest_name || '—'}</p></div>
               </div>
             </div>
 
@@ -118,7 +118,7 @@ const DriverJobs = () => {
                 )
               )}
               {job.status === 'delivered' && (
-                <span className="text-xs text-green-600 font-medium">✓ Delivered · {formatKSH(job.suggested_price)}</span>
+                <span className="text-xs text-green-600 font-medium">✓ Delivered · {formatKSH(job.final_price ?? job.suggested_price)}</span>
               )}
             </div>
 

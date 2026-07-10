@@ -74,7 +74,7 @@ const OwnerEarnings = () => {
     { key: 'route', label: 'Route', render: (r) => `${r.pickup_location} → ${r.dropoff_location}` },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.preferred_date) },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
-    { key: 'earned', label: 'Your Cut (30%)', render: (r) => <span className="font-semibold text-green-700">{formatKSH(Math.round(r.suggested_price * 0.3))}</span> },
+    { key: 'value', label: 'Job Value', render: (r) => <span className="font-semibold text-green-700">{formatKSH(r.final_price ?? r.suggested_price)}</span> },
   ];
 
   const payoutCols = [
@@ -124,8 +124,7 @@ const OwnerEarnings = () => {
       <div className="space-y-4">
         {vehicles.map((v) => {
           const jobs = jobsByVehicle[v._id] || [];
-          const grossEarned = jobs.reduce((s, j) => s + (j.suggested_price || 0), 0);
-          const ownerCut = Math.round(grossEarned * 0.3);
+          const totalValue = jobs.reduce((s, j) => s + (j.final_price ?? j.suggested_price ?? 0), 0);
           const isOpen = selected === v._id;
           return (
             <div key={v._id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -141,8 +140,8 @@ const OwnerEarnings = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-green-700">{formatKSH(ownerCut)}</p>
-                  <p className="text-xs text-slate-400">{jobs.length} job{jobs.length !== 1 ? 's' : ''} · your 30%</p>
+                  <p className="font-bold text-green-700">{formatKSH(totalValue)}</p>
+                  <p className="text-xs text-slate-400">{jobs.length} job{jobs.length !== 1 ? 's' : ''} · total job value</p>
                 </div>
               </button>
               {isOpen && (
@@ -160,8 +159,11 @@ const OwnerEarnings = () => {
         <form onSubmit={handlePayoutRequest} className="space-y-4">
           {payoutError && <div className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{payoutError}</div>}
           <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm">
-            <p className="text-slate-500">Available balance</p>
-            <p className="font-bold text-green-700 text-lg">{formatKSH(summary.balance)}</p>
+            <p className="text-slate-500">Available to withdraw</p>
+            <p className="font-bold text-green-700 text-lg">{formatKSH(summary.available ?? summary.balance)}</p>
+            {summary.pendingRequests > 0 && (
+              <p className="text-xs text-amber-600 mt-0.5">{formatKSH(summary.pendingRequests)} already pending review</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Amount (KSH)</label>
@@ -169,7 +171,7 @@ const OwnerEarnings = () => {
               type="number"
               required
               min="1"
-              max={summary.balance}
+              max={summary.available ?? summary.balance}
               value={payoutForm.amount_ksh}
               onChange={(e) => setPayoutForm({ ...payoutForm, amount_ksh: e.target.value })}
               className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"

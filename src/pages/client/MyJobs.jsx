@@ -55,7 +55,11 @@ const ClientMyJobs = () => {
   };
 
   const handleCancel = async () => {
-    await jobsApi.cancel(cancelTarget._id, { note: 'Cancelled by client' });
+    try {
+      await jobsApi.cancel(cancelTarget._id, { note: 'Cancelled by client' });
+    } catch {
+      // reload below shows the true state either way
+    }
     setCancelModal(false);
     setCancelTarget(null);
     load();
@@ -84,11 +88,11 @@ const ClientMyJobs = () => {
   };
 
   const columns = [
-    { key: 'id', label: '#', render: (r) => <span className="text-xs text-slate-400 font-mono">{r._id.slice(-6)}</span> },
+    { key: 'id', label: '#', render: (r) => <span className="text-xs text-slate-400 font-mono">{r.tracking_code || r._id.slice(-6)}</span> },
     { key: 'route', label: 'Route', render: (r) => <span className="text-xs">{r.pickup_location} → {r.dropoff_location}</span> },
     { key: 'cargo', label: 'Cargo', render: (r) => <span className="capitalize">{r.cargo_type?.replace(/_/g, ' ')}</span> },
     { key: 'weight', label: 'Weight', render: (r) => `${r.weight_kg} kg` },
-    { key: 'price', label: 'Price', render: (r) => formatKSH(r.suggested_price) },
+    { key: 'price', label: 'Price', render: (r) => formatKSH(r.final_price ?? r.suggested_price) },
     { key: 'date', label: 'Pref. Date', render: (r) => formatDate(r.preferred_date) },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
     {
@@ -138,7 +142,10 @@ const ClientMyJobs = () => {
               <div><p className="text-slate-400 text-xs">Pickup</p><p className="font-medium">{selected.pickup_location}</p></div>
               <div><p className="text-slate-400 text-xs">Drop-off</p><p className="font-medium">{selected.dropoff_location}</p></div>
               <div><p className="text-slate-400 text-xs">Cargo / Weight</p><p className="font-medium capitalize">{selected.cargo_type?.replace(/_/g, ' ')} — {selected.weight_kg} kg</p></div>
-              <div><p className="text-slate-400 text-xs">Price</p><p className="font-medium">{formatKSH(selected.suggested_price)}</p></div>
+              <div><p className="text-slate-400 text-xs">Price</p><p className="font-medium">{formatKSH(selected.final_price ?? selected.suggested_price)}</p></div>
+              {selected.tracking_code && (
+                <div><p className="text-slate-400 text-xs">Tracking Code</p><p className="font-mono font-medium">{selected.tracking_code}</p></div>
+              )}
               <div><p className="text-slate-400 text-xs">Preferred Date</p><p className="font-medium">{formatDate(selected.preferred_date)}</p></div>
               {selected.vehicle_id && (
                 <div><p className="text-slate-400 text-xs">Vehicle</p><p className="font-medium">{selected.vehicle_id?.name} — {selected.vehicle_id?.plate_number}</p></div>

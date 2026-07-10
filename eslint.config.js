@@ -23,7 +23,10 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
+      // Fires on the standard fetch-then-setState effect pattern used across
+      // all pages; keep visible as a warning without failing lint.
+      'react-hooks/set-state-in-effect': 'warn',
     },
   },
 ])

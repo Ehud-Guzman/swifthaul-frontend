@@ -14,7 +14,6 @@ const OwnerJobs = () => {
   const [detailModal, setDetailModal] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     const { data } = await jobsApi.getAll();
     setJobs(data.jobs ?? data);
     setLoading(false);
@@ -27,7 +26,7 @@ const OwnerJobs = () => {
     { key: 'vehicle', label: 'Vehicle', render: (r) => r.vehicle_id?.name || '—' },
     { key: 'route', label: 'Route', render: (r) => <span className="text-xs">{r.pickup_location} → {r.dropoff_location}</span> },
     { key: 'cargo', label: 'Cargo', render: (r) => <span className="capitalize">{r.cargo_type?.replace(/_/g, ' ')}</span> },
-    { key: 'price', label: 'Value', render: (r) => formatKSH(r.suggested_price) },
+    { key: 'price', label: 'Value', render: (r) => formatKSH(r.final_price ?? r.suggested_price) },
     { key: 'date', label: 'Pref. Date', render: (r) => formatDate(r.preferred_date) },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
     {
@@ -51,7 +50,7 @@ const OwnerJobs = () => {
             <StatusTimeline currentStatus={selected.status} />
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div><p className="text-slate-400 text-xs">Vehicle</p><p className="font-medium">{selected.vehicle_id?.name} — {selected.vehicle_id?.plate_number}</p></div>
-              <div><p className="text-slate-400 text-xs">Job Value</p><p className="font-medium">{formatKSH(selected.suggested_price)}</p></div>
+              <div><p className="text-slate-400 text-xs">Job Value</p><p className="font-medium">{formatKSH(selected.final_price ?? selected.suggested_price)}</p></div>
               <div><p className="text-slate-400 text-xs">Pickup</p><p className="font-medium">{selected.pickup_location}</p></div>
               <div><p className="text-slate-400 text-xs">Drop-off</p><p className="font-medium">{selected.dropoff_location}</p></div>
               <div><p className="text-slate-400 text-xs">Cargo / Weight</p><p className="font-medium capitalize">{selected.cargo_type?.replace(/_/g, ' ')} — {selected.weight_kg} kg</p></div>

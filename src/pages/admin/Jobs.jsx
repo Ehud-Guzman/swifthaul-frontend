@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { jobsApi, vehiclesApi, usersApi } from '../../services/api';
+import { jobsApi, vehiclesApi, driversApi } from '../../services/api';
 import Table from '../../components/ui/Table';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -9,6 +9,61 @@ import { formatDate, formatKSH } from '../../utils/formatters';
 
 const STATUS_FILTERS = ['', 'pending', 'assigned', 'picked_up', 'in_transit', 'delivered', 'cancelled'];
 const PAGE_SIZE = 20;
+
+// Module-level so the inputs don't remount (and lose focus) on every keystroke
+const AssignFields = ({ job, form, setForm, vehicles, drivers, error }) => (
+  <div className="space-y-4">
+    {error && <div className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
+    <div className="bg-slate-50 rounded-lg p-4 text-sm space-y-1">
+      <p><span className="font-medium">Route:</span> {job.pickup_location} → {job.dropoff_location}</p>
+      <p><span className="font-medium">Cargo:</span> {job.cargo_type} — {job.weight_kg} kg</p>
+      {job.vehicle_type && <p><span className="font-medium">Requested vehicle:</span> <span className="capitalize">{job.vehicle_type.replace(/_/g, ' ')}</span></p>}
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle</label>
+      <select value={form.vehicle_id} onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
+        className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+        <option value="">Select vehicle</option>
+        {vehicles.map((v) => (
+          <option key={v._id} value={v._id} disabled={v.capacity_kg < job.weight_kg}>
+            {v.name} — {v.plate_number} ({v.type}, {v.capacity_kg} kg{v.capacity_kg < job.weight_kg ? ' — too small' : ''})
+          </option>
+        ))}
+      </select>
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">Driver</label>
+      <select value={form.driver_id} onChange={(e) => setForm((f) => ({ ...f, driver_id: e.target.value }))}
+        className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+        <option value="">Select driver</option>
+        {drivers.map((d) => (
+          <option key={d._id} value={d._id}>{d.name} — {d.email}</option>
+        ))}
+      </select>
+      {drivers.length === 0 && <p className="text-xs text-amber-600 mt-1">No available drivers right now.</p>}
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Price (KSH)</label>
+        <input type="number" value={form.price_override}
+          onChange={(e) => setForm((f) => ({ ...f, price_override: e.target.value }))}
+          className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+        <p className="text-xs text-slate-400 mt-1">Final settlement price for the job.</p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Driver Cut (%)</label>
+        <input type="number" min="0" max="100" value={form.driver_cut_percent}
+          onChange={(e) => setForm((f) => ({ ...f, driver_cut_percent: e.target.value }))}
+          className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+        <p className="text-xs text-slate-400 mt-1">
+          {form.price_override > 0 && form.driver_cut_percent !== ''
+            ? `Driver ${formatKSH(Math.round(form.price_override * form.driver_cut_percent / 100))} · Owner ${formatKSH(form.price_override - Math.round(form.price_override * form.driver_cut_percent / 100))}`
+            : 'Owner receives the rest.'}
+        </p>
+      </div>
+    </div>
+  </div>
+);
 
 const AdminJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -47,23 +102,33 @@ const AdminJobs = () => {
   useEffect(() => { load(1); }, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(page); }, [page]);       // eslint-disable-line react-hooks/exhaustive-deps
 
-  const openAssign = async (job) => {
+  const loadAssignOptions = async (job) => {
     setSelected(job);
     setAssignError('');
-    const [vRes, uRes] = await Promise.all([vehiclesApi.getAvailable(), usersApi.getAll({ role: 'driver', limit: 200 })]);
-    setVehicles(vRes.data);
-    setDrivers(uRes.data.users ?? uRes.data);
-    setAssignForm({ vehicle_id: '', driver_id: '', price_override: job.suggested_price });
+    try {
+      const [vRes, dRes] = await Promise.all([vehiclesApi.getAvailable(), driversApi.getAvailable()]);
+      setVehicles(vRes.data);
+      setDrivers(dRes.data);
+    } catch {
+      setVehicles([]);
+      setDrivers([]);
+      setAssignError('Could not load available vehicles/drivers');
+    }
+    setAssignForm({
+      vehicle_id: '',
+      driver_id: '',
+      price_override: job.final_price ?? job.suggested_price,
+      driver_cut_percent: job.driver_cut_percent ?? 70,
+    });
+  };
+
+  const openAssign = async (job) => {
+    await loadAssignOptions(job);
     setAssignModal(true);
   };
 
   const openReassign = async (job) => {
-    setSelected(job);
-    setAssignError('');
-    const [vRes, uRes] = await Promise.all([vehiclesApi.getAvailable(), usersApi.getAll({ role: 'driver', limit: 200 })]);
-    setVehicles(vRes.data);
-    setDrivers(uRes.data.users ?? uRes.data);
-    setAssignForm({ vehicle_id: '', driver_id: '', price_override: job.suggested_price });
+    await loadAssignOptions(job);
     setReassignModal(true);
   };
 
@@ -98,7 +163,11 @@ const AdminJobs = () => {
   };
 
   const handleCancel = async () => {
-    await jobsApi.cancel(cancelTarget._id, { note: 'Cancelled by admin' });
+    try {
+      await jobsApi.cancel(cancelTarget._id, { note: 'Cancelled by admin' });
+    } catch {
+      // job list reload below will show the true state either way
+    }
     setCancelModal(false);
     setCancelTarget(null);
     load(page);
@@ -114,7 +183,7 @@ const AdminJobs = () => {
     { key: 'route', label: 'Route', render: (r) => <span className="text-xs">{r.pickup_location} → {r.dropoff_location}</span> },
     { key: 'cargo', label: 'Cargo', render: (r) => <span className="capitalize">{r.cargo_type?.replace(/_/g, ' ')}</span> },
     { key: 'weight', label: 'Weight', render: (r) => `${r.weight_kg} kg` },
-    { key: 'price', label: 'Price', render: (r) => formatKSH(r.suggested_price) },
+    { key: 'price', label: 'Price', render: (r) => formatKSH(r.final_price ?? r.suggested_price) },
     { key: 'date', label: 'Pref. Date', render: (r) => formatDate(r.preferred_date) },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
     {
@@ -130,42 +199,6 @@ const AdminJobs = () => {
       ),
     },
   ];
-
-  const AssignFields = () => (
-    <div className="space-y-4">
-      {assignError && <div className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{assignError}</div>}
-      <div className="bg-slate-50 rounded-lg p-4 text-sm space-y-1">
-        <p><span className="font-medium">Route:</span> {selected.pickup_location} → {selected.dropoff_location}</p>
-        <p><span className="font-medium">Cargo:</span> {selected.cargo_type} — {selected.weight_kg} kg</p>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle</label>
-        <select value={assignForm.vehicle_id} onChange={(e) => setAssignForm({ ...assignForm, vehicle_id: e.target.value })}
-          className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
-          <option value="">Select vehicle</option>
-          {vehicles.map((v) => (
-            <option key={v._id} value={v._id}>{v.name} — {v.plate_number} ({v.type})</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Driver</label>
-        <select value={assignForm.driver_id} onChange={(e) => setAssignForm({ ...assignForm, driver_id: e.target.value })}
-          className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
-          <option value="">Select driver</option>
-          {drivers.map((d) => (
-            <option key={d._id} value={d._id}>{d.name} — {d.email}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Price Override (KSH)</label>
-        <input type="number" value={assignForm.price_override}
-          onChange={(e) => setAssignForm({ ...assignForm, price_override: e.target.value })}
-          className="w-full border border-slate-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-4">
@@ -201,7 +234,7 @@ const AdminJobs = () => {
       <Modal open={assignModal} onClose={() => setAssignModal(false)} title="Assign Job" size="md">
         {selected && (
           <div className="space-y-4">
-            <AssignFields />
+            <AssignFields job={selected} form={assignForm} setForm={setAssignForm} vehicles={vehicles} drivers={drivers} error={assignError} />
             <div className="flex gap-3 justify-end">
               <Button variant="secondary" onClick={() => setAssignModal(false)}>Cancel</Button>
               <Button onClick={handleAssign} loading={assigning}>Confirm Assignment</Button>
@@ -217,7 +250,7 @@ const AdminJobs = () => {
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-800">
               The current driver and vehicle will be released and replaced.
             </div>
-            <AssignFields />
+            <AssignFields job={selected} form={assignForm} setForm={setAssignForm} vehicles={vehicles} drivers={drivers} error={assignError} />
             <div className="flex gap-3 justify-end">
               <Button variant="secondary" onClick={() => setReassignModal(false)}>Cancel</Button>
               <Button onClick={handleReassign} loading={assigning}>Confirm Reassignment</Button>
@@ -275,7 +308,8 @@ const AdminJobs = () => {
               <div><p className="text-slate-400 text-xs">Pickup</p><p className="font-medium">{selected.pickup_location}</p></div>
               <div><p className="text-slate-400 text-xs">Drop-off</p><p className="font-medium">{selected.dropoff_location}</p></div>
               <div><p className="text-slate-400 text-xs">Cargo / Weight</p><p className="font-medium capitalize">{selected.cargo_type?.replace(/_/g, ' ')} — {selected.weight_kg} kg</p></div>
-              <div><p className="text-slate-400 text-xs">Price</p><p className="font-medium">{formatKSH(selected.suggested_price)}</p></div>
+              <div><p className="text-slate-400 text-xs">Price</p><p className="font-medium">{formatKSH(selected.final_price ?? selected.suggested_price)}</p></div>
+              {selected.tracking_code && <div><p className="text-slate-400 text-xs">Tracking Code</p><p className="font-mono font-medium">{selected.tracking_code}</p></div>}
               {selected.notes && <div className="col-span-1 sm:col-span-2"><p className="text-slate-400 text-xs">Notes</p><p>{selected.notes}</p></div>}
             </div>
             {selected.vehicle_id && (

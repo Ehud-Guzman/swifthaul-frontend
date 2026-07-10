@@ -1,8 +1,18 @@
 import axios from 'axios';
 
+const BASE_URL = `${import.meta.env.VITE_API_URL || ''}/api`;
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30000,
+});
+
+// Bare client for public endpoints — never sends auth headers
+const publicClient = axios.create({
+  baseURL: BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 30000,
 });
 
 // Attach access token on every request
@@ -12,19 +22,33 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auto-refresh on 401
+// Auto-refresh on 401 — single-flight so concurrent 401s share one refresh
+let refreshPromise = null;
+
+const refreshTokens = () => {
+  if (!refreshPromise) {
+    const refreshToken = localStorage.getItem('refreshToken');
+    refreshPromise = axios
+      .post(`${BASE_URL}/auth/refresh`, { refreshToken })
+      .then(({ data }) => {
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        return data.accessToken;
+      })
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+};
+
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
-    if (err.response?.status === 401 && !original._retry) {
+    if (err.response?.status === 401 && !original._retry && localStorage.getItem('refreshToken')) {
       original._retry = true;
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        const { data } = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/auth/refresh`, { refreshToken });
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        original.headers.Authorization = `Bearer ${data.accessToken}`;
+        const accessToken = await refreshTokens();
+        original.headers.Authorization = `Bearer ${accessToken}`;
         return api(original);
       } catch {
         localStorage.clear();
@@ -95,9 +119,14 @@ export const analyticsApi = {
 
 // --- Public (no auth) ---
 export const publicApi = {
-  estimate: (data) => api.post('/public/estimate', data),
-  submitQuote: (data) => api.post('/public/quote', data),
-  track: (id) => api.get(`/public/track/${id}`),
+  estimate: (data) => publicClient.post('/public/estimate', data),
+  submitQuote: (data) => publicClient.post('/public/quote', data),
+  track: (code) => publicClient.get(`/public/track/${encodeURIComponent(code)}`),
+};
+
+// --- Drivers ---
+export const driversApi = {
+  getAvailable: () => api.get('/drivers/available'),
 };
 
 // --- Notifications ---

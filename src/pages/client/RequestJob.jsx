@@ -32,6 +32,10 @@ const RequestJob = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!form.vehicle_type) {
+      setError('Please select a vehicle type from the price estimates first.');
+      return;
+    }
     setLoading(true);
     try {
       await jobsApi.create(form);
@@ -72,7 +76,7 @@ const RequestJob = () => {
           <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <Info size={14} className="text-orange-500" />
-              <span className="text-sm font-medium text-orange-700">Estimated Prices by Vehicle Type</span>
+              <span className="text-sm font-medium text-orange-700">Select a vehicle type to set your price</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {estimates.map((e) => (

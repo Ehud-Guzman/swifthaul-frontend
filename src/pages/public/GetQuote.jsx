@@ -37,6 +37,11 @@ const GetQuote = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!form.vehicle_type) {
+      setError('Please enter your cargo weight and select a vehicle type from the price estimates.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await publicApi.submitQuote(form);
@@ -209,11 +214,11 @@ const GetQuote = () => {
             <h1 className="text-2xl font-bold mb-3">Request Submitted!</h1>
             <p className="text-slate-500 mb-8 max-w-sm mx-auto text-sm leading-relaxed">
               Our team will review your request and contact you at <strong>{form.guest_email}</strong>.
-              Save your tracking ID below to follow your shipment.
+              Save your tracking code below to follow your shipment.
             </p>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-sm mx-auto mb-8">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Your Tracking ID</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Your Tracking Code</p>
               <div className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-3 border border-slate-200">
                 <code className="flex-1 text-sm font-mono text-slate-800 break-all">{result?.tracking_id}</code>
                 <button onClick={copyId} className="text-slate-400 hover:text-orange-500 transition-colors flex-shrink-0">

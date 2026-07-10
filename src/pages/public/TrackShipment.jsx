@@ -32,7 +32,7 @@ const TrackShipment = () => {
       const { data } = await publicApi.track(trackingId.trim());
       setResult(data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Could not find that tracking ID. Please double-check and try again.');
+      setError(err.response?.data?.message || 'Could not find that tracking code. Please double-check and try again.');
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ const TrackShipment = () => {
       <div className="max-w-2xl mx-auto px-6 py-12">
         <div className="mb-8">
           <h1 className="text-2xl font-bold mb-2">Track Your Shipment</h1>
-          <p className="text-slate-500 text-sm">Enter the tracking ID you received after submitting your request.</p>
+          <p className="text-slate-500 text-sm">Enter the tracking code you received after submitting your request (e.g. SH-A7K2M9QX).</p>
         </div>
 
         {/* Search form */}
@@ -74,7 +74,7 @@ const TrackShipment = () => {
               type="text"
               value={trackingId}
               onChange={(e) => setTrackingId(e.target.value)}
-              placeholder="Paste your tracking ID here..."
+              placeholder="Enter your tracking code, e.g. SH-A7K2M9QX"
               className="w-full pl-9 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
             />
           </div>
