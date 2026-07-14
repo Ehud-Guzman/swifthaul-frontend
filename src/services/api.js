@@ -65,6 +65,8 @@ export const authApi = {
   register: (data) => api.post('/auth/register', data),
   refresh: (data) => api.post('/auth/refresh', data),
   changePassword: (data) => api.post('/auth/change-password', data),
+  forgotPassword: (data) => publicClient.post('/auth/forgot-password', data),
+  resetPassword: (data) => publicClient.post('/auth/reset-password', data),
 };
 
 // --- Users ---

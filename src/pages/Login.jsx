@@ -98,6 +98,11 @@ const Login = () => {
               placeholder="••••••••"
             />
           </div>
+          <div className="text-right -mt-2">
+            <Link to="/forgot-password" className="text-xs text-orange-500 hover:underline font-medium">
+              Forgot password?
+            </Link>
+          </div>
           <Button type="submit" className="w-full justify-center" loading={loading}>
             Sign In
           </Button>
