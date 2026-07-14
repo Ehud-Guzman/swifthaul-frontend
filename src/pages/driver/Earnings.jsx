@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { earningsApi } from '../../services/api';
+import { earningsApi, reportsApi } from '../../services/api';
 import Table from '../../components/ui/Table';
 import StatCard from '../../components/ui/StatCard';
+import Button from '../../components/ui/Button';
 import { formatKSH, formatDate } from '../../utils/formatters';
-import { Wallet, ClipboardList, Truck } from 'lucide-react';
+import { Wallet, ClipboardList, Truck, FileText } from 'lucide-react';
 
 const DriverEarnings = () => {
   const [earnings, setEarnings] = useState([]);
   const [totalPay, setTotalPay] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [downloadingStatement, setDownloadingStatement] = useState(false);
 
   useEffect(() => {
     earningsApi.getDriverEarnings()
@@ -18,6 +20,19 @@ const DriverEarnings = () => {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const downloadStatement = async () => {
+    setDownloadingStatement(true);
+    try {
+      const { data } = await reportsApi.driverStatement();
+      const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = 'swifthaul_earnings_statement.pdf'; a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingStatement(false);
+    }
+  };
 
   const avgPay = earnings.length ? Math.round(totalPay / earnings.length) : 0;
 
@@ -34,6 +49,12 @@ const DriverEarnings = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-end">
+        <Button size="sm" variant="outline" loading={downloadingStatement} onClick={downloadStatement}>
+          <FileText size={13} /> Download Statement (PDF)
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total Earnings" value={formatKSH(totalPay)} icon={Wallet} color="green" sub="Your 70% cut" />
         <StatCard title="Completed Jobs" value={earnings.length} icon={ClipboardList} color="blue" />

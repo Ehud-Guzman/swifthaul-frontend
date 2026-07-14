@@ -23,6 +23,7 @@ import AdminUsers from './pages/admin/Users';
 import AdminVehicles from './pages/admin/Vehicles';
 import AdminPricing from './pages/admin/Pricing';
 import AdminAnalytics from './pages/admin/Analytics';
+import AdminReports from './pages/admin/Reports';
 import AdminPayouts from './pages/admin/Payouts';
 import AdminDisputes from './pages/admin/Disputes';
 import AdminAuditLog from './pages/admin/AuditLog';
@@ -68,6 +69,7 @@ const App = () => (
       <Route path="vehicles" element={<AdminVehicles />} />
       <Route path="pricing" element={<AdminPricing />} />
       <Route path="analytics" element={<AdminAnalytics />} />
+      <Route path="reports" element={<AdminReports />} />
       <Route path="payouts" element={<AdminPayouts />} />
       <Route path="disputes" element={<AdminDisputes />} />
       <Route path="audit-log" element={<AdminAuditLog />} />

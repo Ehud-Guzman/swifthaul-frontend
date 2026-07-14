@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Truck, Users, Package, DollarSign,
   BarChart2, LogOut, ClipboardList, Car, Wallet,
-  ArrowDownToLine, AlertTriangle, ShieldCheck,
+  ArrowDownToLine, AlertTriangle, ShieldCheck, FileText,
 } from 'lucide-react';
 
 const navByRole = {
@@ -16,6 +16,7 @@ const navByRole = {
     { label: 'Payouts', to: '/admin/payouts', icon: ArrowDownToLine },
     { label: 'Disputes', to: '/admin/disputes', icon: AlertTriangle },
     { label: 'Analytics', to: '/admin/analytics', icon: BarChart2 },
+    { label: 'Reports', to: '/admin/reports', icon: FileText },
     { label: 'Audit Log', to: '/admin/audit-log', icon: ShieldCheck },
   ],
   owner: [

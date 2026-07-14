@@ -169,4 +169,15 @@ export const auditLogApi = {
   getAll: (params) => api.get('/audit-log', { params }),
 };
 
+// --- Reports ---
+export const reportsApi = {
+  ownerStatement: (params) => api.get('/reports/owner/statement', { params, responseType: 'blob' }),
+  driverStatement: (params) => api.get('/reports/driver/statement', { params, responseType: 'blob' }),
+  jobInvoice: (jobId) => api.get(`/reports/jobs/${jobId}/invoice`, { responseType: 'blob' }),
+  exportPayouts: (params) => api.get('/reports/payouts/export', { params, responseType: 'blob' }),
+  exportDisputes: (params) => api.get('/reports/disputes/export', { params, responseType: 'blob' }),
+  exportAuditLog: (params) => api.get('/reports/audit-log/export', { params, responseType: 'blob' }),
+  businessSummary: (params) => api.get('/reports/summary', { params, responseType: 'blob' }),
+};
+
 export default api;

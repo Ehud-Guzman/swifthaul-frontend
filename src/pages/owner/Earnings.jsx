@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { vehiclesApi, payoutsApi } from '../../services/api';
+import { vehiclesApi, payoutsApi, reportsApi } from '../../services/api';
 import Table from '../../components/ui/Table';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import StatCard from '../../components/ui/StatCard';
 import { formatKSH, formatDate, vehicleTypeLabel } from '../../utils/formatters';
-import { Wallet, Car, ClipboardList, ArrowDownToLine } from 'lucide-react';
+import { Wallet, Car, ClipboardList, ArrowDownToLine, FileText } from 'lucide-react';
 
 const PAYOUT_STATUS_COLORS = {
   pending: 'text-amber-600 bg-amber-50',
@@ -25,6 +25,20 @@ const OwnerEarnings = () => {
   const [payoutForm, setPayoutForm] = useState({ amount_ksh: '', note: '' });
   const [submitting, setSubmitting] = useState(false);
   const [payoutError, setPayoutError] = useState('');
+  const [downloadingStatement, setDownloadingStatement] = useState(false);
+
+  const downloadStatement = async () => {
+    setDownloadingStatement(true);
+    try {
+      const { data } = await reportsApi.ownerStatement();
+      const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = 'swifthaul_earnings_statement.pdf'; a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingStatement(false);
+    }
+  };
 
   const loadPayouts = async () => {
     const [sumRes, payRes] = await Promise.all([
@@ -95,6 +109,12 @@ const OwnerEarnings = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-end">
+        <Button size="sm" variant="outline" loading={downloadingStatement} onClick={downloadStatement}>
+          <FileText size={13} /> Download Statement (PDF)
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total Earned" value={formatKSH(summary.totalEarned)} icon={Wallet} color="green" sub="All time" />
         <StatCard title="Total Paid Out" value={formatKSH(summary.totalPaid)} icon={ArrowDownToLine} color="blue" sub="Approved payouts" />
